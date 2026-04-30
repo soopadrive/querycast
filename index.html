@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1f6feb">
+<title>QueryCast</title>
+<meta name="description" content="User-controlled YouTube subscription feed. Transparent curation, no algorithm.">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QueryCast">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <header>
+    <h1 class="logo">◆ QueryCast</h1>
+    <span class="status">v0.1 · Stage 1 placeholder</span>
+  </header>
+
+  <main>
+    <h2>Welcome to QueryCast</h2>
+    <p class="lead">A user-controlled YouTube subscription feed. Sign in with Google, see only what your filters allow, ranked by transparent rules you control.</p>
+
+    <div class="boot-status">
+      <div class="row" id="status-pwa">
+        <span class="label">PWA install</span>
+        <span class="value pending">Checking…</span>
+      </div>
+      <div class="row" id="status-sw">
+        <span class="label">Service worker</span>
+        <span class="value pending">Checking…</span>
+      </div>
+      <div class="row" id="status-idb">
+        <span class="label">Local storage</span>
+        <span class="value pending">Checking…</span>
+      </div>
+      <div class="row" id="status-profile">
+        <span class="label">Default profile</span>
+        <span class="value pending">Checking…</span>
+      </div>
+    </div>
+
+    <button class="primary" disabled>Sign in with Google (Stage 2)</button>
+    <p class="note">This is a Stage 1 placeholder. Sign-in arrives in Stage 2 once the auth flow is wired up.</p>
+  </main>
+
+  <footer>
+    <a href="/privacy.html">Privacy</a>
+    <span>·</span>
+    <a href="https://github.com/soopadrive/querycast">Source</a>
+    <span>·</span>
+    <span>Read-only. Test mode only.</span>
+  </footer>
+</div>
+
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>
