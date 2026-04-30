@@ -61,17 +61,15 @@ vercel dev   # http://localhost:3000
 
 ## Deployment
 
-After committing:
+**Production URL:** https://querycast.crockett.me (primary), https://querycast.vercel.app (fallback alias)
 
 ```bash
-git push origin main   # Triggers Vercel auto-deploy if connected
+git push origin main      # Triggers Vercel auto-deploy if GitHub is connected
+vercel                    # Manual preview deploy
+vercel --prod             # Manual production deploy
 ```
 
-If using `vercel` CLI directly:
-```bash
-vercel              # Deploy to preview URL
-vercel --prod       # Deploy to production .vercel.app subdomain
-```
+DNS for `querycast.crockett.me` lives at GoDaddy (A record `querycast` → `76.76.21.21`). Vercel auto-provisions SSL.
 
 ## Stages
 
