@@ -1,0 +1,22 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for QueryCast: core APIs and shell open for OAuth.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:default",
+    "core:webview:default",
+    {
+      "identifier": "shell:allow-open",
+      "allow": [
+        { "url": "https://accounts.google.com/o/oauth2/**" },
+        { "url": "https://myaccount.google.com/**" },
+        { "url": "https://console.cloud.google.com/**" },
+        { "url": "https://www.youtube.com/watch**" },
+        { "url": "https://github.com/soopadrive/querycast" }
+      ]
+    }
+  ]
+}

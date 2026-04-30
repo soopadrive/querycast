@@ -42,4 +42,5 @@ export const STORES = {
   watched: 'watched',
   saved: 'saved',
   notInterested: 'not_interested',
+  credentials: 'credentials',
 };

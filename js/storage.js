@@ -27,6 +27,11 @@ export function openDb() {
           db.createObjectStore(STORES.watched, { keyPath: 'videoId' });
           db.createObjectStore(STORES.saved, { keyPath: 'videoId' });
           db.createObjectStore(STORES.notInterested, { keyPath: 'videoId' });
+        // fallthrough
+        case 1:
+          // v2: add credentials store for BYO OAuth Client ID + Secret.
+          // Single-row store keyed by id='oauth'.
+          db.createObjectStore(STORES.credentials, { keyPath: 'id' });
         // future migrations append more cases here
       }
     };
@@ -102,4 +107,17 @@ export async function seedDefaults() {
   const existing = await count(STORES.profiles);
   if (existing > 0) return;
   await put(STORES.profiles, structuredClone(DEFAULT_PROFILE));
+}
+
+export async function getCredentials() {
+  const result = await get(STORES.credentials, 'oauth');
+  return result || null;
+}
+
+export async function saveCredentials({ clientId, clientSecret }) {
+  await put(STORES.credentials, { id: 'oauth', clientId, clientSecret });
+}
+
+export async function clearCredentials() {
+  await del(STORES.credentials, 'oauth');
 }

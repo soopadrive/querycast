@@ -13,147 +13,107 @@
     line-height: 1.6;
     font-size: 16px;
   }
-  .doc {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 3rem 2rem;
-  }
-  h1 {
-    font-size: 2rem;
-    color: #0366d6;
-    margin-bottom: 0.3rem;
-  }
+  .doc { max-width: 760px; margin: 0 auto; padding: 3rem 2rem; }
+  h1 { font-size: 2rem; color: #0366d6; margin-bottom: 0.3rem; }
   .tagline {
-    color: #586069;
-    font-size: 1.05rem;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    color: #586069; font-size: 1.05rem;
+    margin-bottom: 2rem; padding-bottom: 1.5rem;
     border-bottom: 1px solid #e1e4e8;
   }
-  h2 {
-    color: #0366d6;
-    font-size: 1.4rem;
-    margin: 2.5rem 0 0.7rem;
-    padding-bottom: 0.3rem;
-    border-bottom: 1px solid #e1e4e8;
-  }
-  h3 {
-    color: #24292e;
-    font-size: 1.1rem;
-    margin: 1.5rem 0 0.4rem;
-  }
+  h2 { color: #0366d6; font-size: 1.4rem; margin: 2.5rem 0 0.7rem; padding-bottom: 0.3rem; border-bottom: 1px solid #e1e4e8; }
+  h3 { color: #24292e; font-size: 1.1rem; margin: 1.5rem 0 0.4rem; }
   p { margin-bottom: 1rem; }
   ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
   li { margin-bottom: 0.4rem; }
   code {
-    background: #f6f8fa;
-    border: 1px solid #e1e4e8;
-    padding: 0.1rem 0.4rem;
-    border-radius: 3px;
+    background: #f6f8fa; border: 1px solid #e1e4e8;
+    padding: 0.1rem 0.4rem; border-radius: 3px;
     font-family: 'SF Mono', Consolas, monospace;
-    font-size: 0.85em;
-    color: #d73a49;
+    font-size: 0.85em; color: #d73a49;
   }
   pre {
-    background: #f6f8fa;
-    border: 1px solid #e1e4e8;
-    border-radius: 6px;
-    padding: 1rem;
-    overflow-x: auto;
-    font-family: 'SF Mono', Consolas, monospace;
-    font-size: 0.85rem;
+    background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 6px;
+    padding: 1rem; overflow-x: auto;
+    font-family: 'SF Mono', Consolas, monospace; font-size: 0.85rem;
     margin-bottom: 1rem;
   }
-  pre code {
-    background: transparent;
-    border: none;
-    padding: 0;
-    color: inherit;
-  }
+  pre code { background: transparent; border: none; padding: 0; color: inherit; }
   a { color: #0366d6; text-decoration: none; }
   a:hover { text-decoration: underline; }
   .note {
-    background: #fffbdd;
-    border-left: 4px solid #ffe680;
-    padding: 0.8rem 1rem;
-    margin: 1rem 0;
-    border-radius: 0 4px 4px 0;
+    background: #fffbdd; border-left: 4px solid #ffe680;
+    padding: 0.8rem 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0;
   }
   .stage-grid {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.5rem 1.2rem;
-    margin: 1rem 0;
-    font-size: 0.95rem;
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 0.5rem 1.2rem; margin: 1rem 0; font-size: 0.95rem;
   }
-  .stage-grid .num {
-    color: #6a737d;
-    font-family: 'SF Mono', Consolas, monospace;
-  }
+  .stage-grid .num { color: #6a737d; font-family: 'SF Mono', Consolas, monospace; }
 </style>
 </head>
 <body>
 <div class="doc">
 
 <h1>QueryCast</h1>
-<p class="tagline">A user-controlled YouTube subscription feed. Transparent curation, no algorithm.</p>
+<p class="tagline">A user-controlled YouTube subscription feed for Windows. Transparent curation, no algorithm.</p>
 
 <h2>What is it?</h2>
-<p>QueryCast is an installable Progressive Web App that replaces YouTube's algorithmic home feed with a curation system you fully control. Every video that reaches your feed has passed your filters; every score that ranks them is a transparent linear combination of weighted signals you set.</p>
+<p>QueryCast is a Windows desktop app that replaces YouTube's algorithmic home feed with a curation system you fully control. Every video that reaches your feed has passed your filters; every score that ranks them is a transparent linear combination of weighted signals you set.</p>
 
 <p>It is <strong>not</strong> a YouTube replacement. You still watch videos via YouTube's player. QueryCast replaces <em>discovery</em> — the part where the algorithm decides what to surface.</p>
 
 <h2>Status</h2>
-<p>v0.1 — Stage 1 placeholder, live at <a href="https://querycast.crockett.me">querycast.crockett.me</a>. Sign-in and the actual feed land in subsequent stages. The plan is at <code>~/plans/querycast.html</code>.</p>
+<p>v0.1 — Stage 1 placeholder. Sign-in and the actual feed land in subsequent stages. The plan is at <code>~/plans/querycast.html</code>.</p>
 
 <div class="note">
-  <strong>Test mode only.</strong> Per ADR-002, this app is in Google's OAuth Testing tier. It cannot be used by anyone outside the manually-invited test list (capped at 100 users by Google policy).
+  <strong>BYO credentials model.</strong> QueryCast uses your own Google Cloud OAuth credentials so your YouTube API quota is yours alone. First launch shows a setup screen with step-by-step instructions; expect ~15 minutes one-time setup.
 </div>
 
-<h2>Install</h2>
+<h2>Install (end users)</h2>
 
-<h3>Desktop (Chrome, Edge, Brave)</h3>
 <ol>
-  <li>Visit the deployed URL.</li>
-  <li>Click the install icon in the address bar (looks like a small monitor with an arrow).</li>
-  <li>Confirm. QueryCast installs as a standalone app.</li>
+  <li>Download <code>QueryCast_0.1.0_x64_en-US.msi</code> from the GitHub release (or the portable <code>.exe</code> from the same release).</li>
+  <li>Run the installer. <strong>Windows SmartScreen will warn:</strong> "Microsoft Defender SmartScreen prevented an unrecognized app from starting." Click <em>More info → Run anyway</em>. (The binary is unsigned; an EV cert to skip this is on the v2 wishlist.)</li>
+  <li>If WebView2 is not already installed (rare on Windows 11, possible on Windows 10), the installer downloads it automatically. Adds ~30 seconds to first install.</li>
+  <li>Launch QueryCast from the Start menu.</li>
+  <li>Setup screen appears. Follow the 5-step guide for creating your Google Cloud OAuth credentials. Paste your Client ID and Client Secret. Save.</li>
+  <li>App restarts into the main view. Sign in with Google when Stage 2 ships.</li>
 </ol>
 
-<h3>Android (Chrome)</h3>
-<ol>
-  <li>Visit the deployed URL.</li>
-  <li>Tap the menu (three dots) → "Install app" or "Add to Home screen."</li>
-</ol>
+<h2>Build from source (developers)</h2>
 
-<h3>iOS (Safari)</h3>
-<ol>
-  <li>Visit the deployed URL.</li>
-  <li>Tap the Share button (square with arrow).</li>
-  <li>Scroll to "Add to Home Screen" → Add.</li>
-</ol>
+<h3>Prerequisites</h3>
+<ul>
+  <li><strong>Rust</strong> (stable, ≥1.77): install via <a href="https://rustup.rs">rustup.rs</a></li>
+  <li><strong>Tauri CLI</strong>: <code>cargo install tauri-cli --version "^2"</code></li>
+  <li><strong>Windows builds:</strong> Visual Studio Build Tools 2022 with the C++ desktop development workload</li>
+  <li><strong>WebView2 runtime</strong> (already on Windows 11; auto-installed via the bundled Evergreen Bootstrapper otherwise)</li>
+</ul>
 
-<h2>Run locally (developers)</h2>
-<pre><code>cd /path/to/querycast
-vercel dev    # serves at http://localhost:3000</code></pre>
+<h3>Run in development</h3>
+<pre><code>cd querycast
+cargo tauri dev</code></pre>
 
-<p>Static files + any <code>api/*.js</code> functions are served. Service worker registers on first load.</p>
+<h3>Build a Windows installer</h3>
+<pre><code>cargo tauri build</code></pre>
+
+<p>Output: <code>src-tauri/target/release/bundle/msi/QueryCast_0.1.0_x64_en-US.msi</code> + portable <code>.exe</code>.</p>
 
 <h2>Stages</h2>
 <div class="stage-grid">
-  <span class="num">0</span><span>Decisions, name, ADRs, privacy draft, sunset criteria — done.</span>
-  <span class="num">1</span><span>Scaffold + PWA + IndexedDB contract — current.</span>
-  <span class="num">2</span><span>Google sign-in + in-app browser gate + browser matrix validation.</span>
-  <span class="num">3</span><span>Minimal RSS proxy.</span>
-  <span class="num">4</span><span>Subscriptions list + first feed render.</span>
-  <span class="num">5</span><span>Metadata enrichment + tombstones + client quota cap.</span>
-  <span class="num">6</span><span>Filter + ranking engine (channel groups, pins, sweet spot).</span>
-  <span class="num">7</span><span>UI per locked design + per-video actions + Saved view + profile switcher.</span>
-  <span class="num">8</span><span>Settings UI (profiles, channel groups, hidden videos) + Drive backup.</span>
-  <span class="num">9</span><span>Soft launch + kill criterion check.</span>
+  <span class="num">0</span><span>Decisions, ADRs, name (QueryCast), sunset criteria — done.</span>
+  <span class="num">1</span><span>Tauri scaffold + BYO setup screen + IndexedDB contract — current.</span>
+  <span class="num">2</span><span>PKCE auth flow via localhost loopback + refresh tokens.</span>
+  <span class="num">3</span><span>Subscriptions list + direct RSS fetch + first feed render.</span>
+  <span class="num">4</span><span>Metadata enrichment + tombstones + client quota cap.</span>
+  <span class="num">5</span><span>Filter + ranking engine (channel groups, pins, sweet spot).</span>
+  <span class="num">6</span><span>UI per locked design + per-video actions + Saved view + profile switcher.</span>
+  <span class="num">7</span><span>Settings UI (profiles, channel groups, hidden videos) + Drive backup.</span>
+  <span class="num">8</span><span>Soft launch + kill criterion check.</span>
 </div>
 
 <h2>Privacy</h2>
-<p>See <a href="/privacy.html">Privacy Policy</a> for what data the app accesses and where it lives. TL;DR: read-only YouTube scope + a Drive folder only QueryCast can read; nothing on our servers; no telemetry.</p>
+<p>All app state — your filters, channel weights, profiles, watched/saved/not-interested videos — lives in IndexedDB on your machine. Backups go to your own Google Drive (in a hidden folder only QueryCast can read). There is no QueryCast server. There is no telemetry. Each user's Google API usage is theirs alone (BYO credentials).</p>
 
 <h2>License + ownership</h2>
 <p>Private repository, private use only at this stage. Source: <a href="https://github.com/soopadrive/querycast">github.com/soopadrive/querycast</a>.</p>

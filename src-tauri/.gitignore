@@ -1,0 +1,5 @@
+# Rust build artifacts
+target/
+
+# Tauri capabilities cache
+gen/schemas/

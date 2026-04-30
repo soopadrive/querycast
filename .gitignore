@@ -1,11 +1,24 @@
+# OS / editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 *.log
-node_modules/
-.vercel/
+
+# Env / secrets
 .env
 .env.local
-.vercel
 .env*.local
+
+# Vercel CLI artifacts (kept around during the 48h Stage 1 fallback window)
+.vercel/
+
+# Rust / Cargo
+**/target/
+
+# Tauri generated
+src-tauri/gen/schemas/
+src-tauri/WixTools/
+
+# Tauri release artifacts (built locally, never committed)
+**/bundle/

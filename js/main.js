@@ -1,20 +1,36 @@
-// Entry point. Stage 1 boots only the chassis: in-app gate, service worker,
-// IndexedDB schema, default profile. Auth lands in Stage 2.
+// QueryCast entry point. Tauri's WebView2 loads this on launch.
+// Stage 1 boots the chassis: open IndexedDB, check for BYO credentials,
+// route to setup screen or main app placeholder. Auth lands in Stage 2.
 
-import { isInAppBrowser, renderInAppBrowserGate } from './inapp-browser-gate.js';
-import { openDb, getActiveProfile, seedDefaults } from './storage.js';
-import { STORES } from './defaults.js';
+import { openDb, seedDefaults, getActiveProfile, getCredentials } from './storage.js';
+import { renderSetupScreen } from './setup-screen.js';
 
-if (isInAppBrowser()) {
-  renderInAppBrowserGate();
-} else {
-  bootApp();
-}
+bootApp();
 
 async function bootApp() {
-  setStatus('pwa', detectPwaContext(), 'info');
-  await registerServiceWorker();
-  await initStorage();
+  let db;
+  try {
+    db = await openDb();
+    await seedDefaults();
+  } catch (err) {
+    renderFatal(`Local storage failed: ${err.message}`);
+    return;
+  }
+
+  const creds = await getCredentials();
+  if (!creds || !creds.clientId || !creds.clientSecret) {
+    renderSetupScreen();
+    return;
+  }
+
+  await renderMainApp(db);
+}
+
+async function renderMainApp(db) {
+  setStatus('idb', `Open · DB v${db.version} · ${db.objectStoreNames.length} stores`, 'ok');
+  const profile = await getActiveProfile();
+  setStatus('profile', profile ? `Active: ${profile.name}` : 'Not seeded', profile ? 'ok' : 'fail');
+  setStatus('creds', 'Configured', 'ok');
 }
 
 function setStatus(key, text, kind = 'ok') {
@@ -24,41 +40,15 @@ function setStatus(key, text, kind = 'ok') {
   el.className = `value ${kind}`;
 }
 
-function detectPwaContext() {
-  if (window.matchMedia('(display-mode: standalone)').matches) {
-    return 'Standalone (installed)';
-  }
-  if (navigator.standalone) {
-    return 'Standalone (iOS home-screen)';
-  }
-  return 'In browser (not yet installed)';
-}
-
-async function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) {
-    setStatus('sw', 'Not supported', 'fail');
-    return;
-  }
-  try {
-    const reg = await navigator.serviceWorker.register('/service-worker.js');
-    setStatus('sw', `Registered · scope ${reg.scope}`, 'ok');
-  } catch (err) {
-    setStatus('sw', `Failed: ${err.message}`, 'fail');
-  }
-}
-
-async function initStorage() {
-  try {
-    const db = await openDb();
-    setStatus('idb', `Open · DB v${db.version} · ${db.objectStoreNames.length} stores`, 'ok');
-    await seedDefaults();
-    const profile = await getActiveProfile();
-    if (profile) {
-      setStatus('profile', `Active: ${profile.name}`, 'ok');
-    } else {
-      setStatus('profile', 'No active profile', 'fail');
-    }
-  } catch (err) {
-    setStatus('idb', `Failed: ${err.message}`, 'fail');
-  }
+function renderFatal(msg) {
+  document.body.innerHTML = `
+    <div class="app-shell">
+      <header><h1 class="logo">◆ QueryCast</h1></header>
+      <main>
+        <h2 style="color:var(--red);">Failed to start</h2>
+        <p class="lead">${msg}</p>
+        <p class="note">Try restarting the app. If the problem persists, your local storage may be corrupted; clearing the app's data and restarting will reset state.</p>
+      </main>
+    </div>
+  `;
 }
