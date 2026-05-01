@@ -21,6 +21,7 @@ A user-controlled YouTube subscription-feed curation **Windows desktop app** (Ta
 ```
 querycast/
 ├── index.html              # App shell, loaded by WebView2
+├── preview.html            # Static preview entry (Stage 7a) — opens in any browser via local HTTP
 ├── style.css               # All front-end styles
 ├── favicon-32.png          # Browser tab favicon (also used as window icon)
 ├── icon-192.png            # Source icon
@@ -39,7 +40,14 @@ querycast/
 │   ├── quota.js            # daily usage tracker, 200u/day cap
 │   ├── scoring.js          # pure filter + score functions (Stage 5, ADR-007)
 │   ├── player.js           # YouTube IFrame Player modal (Stage 6b)
-│   └── video-actions.js    # mark watched / save / not-interested + undo helpers
+│   ├── video-actions.js    # mark watched / save / not-interested + undo helpers
+│   └── preview/            # Static preview stubs (Stage 7a) — same exports as production peers
+│       ├── mock-data.js          # deterministic 15-video seed, default profile w/ pin + suppressed channel
+│       ├── storage-stub.js       # in-memory IDB replacement
+│       ├── auth-stub.js          # always-signed-in
+│       ├── player-stub.js        # mock modal player; auto-watched fires at 5s
+│       ├── youtube-api-stub.js   # no-op (preview never refreshes)
+│       └── rss-fetcher-stub.js   # no-op
 └── src-tauri/
     ├── Cargo.toml          # Rust dependencies
     ├── tauri.conf.json     # Bundle config, window settings, icon list
@@ -89,6 +97,22 @@ cargo tauri build    # produces src-tauri/target/release/bundle/msi/QueryCast_0.
 
 From WSL: `cargo tauri dev` works (with WSLg for the GUI) but `cargo tauri build` should be run from Windows for clean Windows binaries.
 
+## Static preview (Stage 7a)
+
+`preview.html` renders the full UI in a regular browser without Tauri or IndexedDB — for fast iteration on layout/hover/modal/action UX. Every external dependency is swapped with a stub via an HTML import map, and a deterministic mock data set is seeded at load time.
+
+```bash
+# From the project directory:
+python -m http.server 8765
+# Then open http://localhost:8765/preview.html
+```
+
+The viewport toggle in the top bar simulates wide / narrow widths (1280, 1000, 880, 720) for breakpoint testing — the layout collapses to inbox rows below 900px. The mock player auto-fires "watched" at 5 seconds (vs 30 in production) so the auto-watch + undo flow is verifiable without a long wait.
+
+**When to use it:** after every CSS / template change, before declaring UI work done. Stage 6a's `overflow: hidden` clip bug and the sibling-card stacking bug both shipped because there was no preview path; the fix is structural.
+
+**State:** seeded fresh on every page load. Reload to reset. State is in-memory only — no IDB persistence.
+
 ## Stages
 
 Per the v3 plan (Tauri pivot):
@@ -103,7 +127,11 @@ Per the v3 plan (Tauri pivot):
   - **6a:** Hybrid layout (featured-row 2fr 1fr 1fr + 3-col grid), rank badges (#1 purple, rest blue), hover info card with score breakdown (per-signal contributions; negative channel in orange). Narrow viewport (<900px) collapses to inbox rows.
   - **6b:** Modal IFrame Player (`js/player.js` — loads `https://www.youtube.com/iframe_api`, mounts `YT.Player`, focus trap, Esc/click-outside/✕ close, body scroll lock). Auto-marks watched after 30s of accumulated PLAYING state. `onError` 101/150 surfaces an "Open on youtube.com" fallback that defers to `open_url`. Per-video actions in info card (`js/video-actions.js` — watch/save/skip + undo helpers) with a 5s undo toast. Card click opens the modal instead of redirecting.
   - **6c:** Toolbar with Today / Saved nav tabs and a profile dropdown. `getSavedFeed()` joins `STORES.saved` against the videos cache, sorts by savedAt desc, drops the featured-row hierarchy in Saved view. Profile dropdown lists profiles from IDB with active marked; "Manage profiles…" is the Stage 7 hook.
-- **Stage 7 (next):** Settings UI (profiles CRUD, channel groups, hidden videos panel) + Drive backup. Also includes a `preview.html` static-preview path that stubs the Tauri APIs (`__TAURI__.core.invoke`, `__TAURI__.event.listen`) and IndexedDB, seeds deterministic mock video/profile/saved data, and renders the full UI in a regular browser. This is the validation surface for layout regressions — use it after every CSS / template change, at default width and at the narrow-layout breakpoint (<900px). Stage 6a's hover-info-card-clipped-by-overflow:hidden bug shipped because there was no preview path; this is the structural fix.
+- **Stage 7 (in progress):** Settings UI + Drive backup, sliced into 7a/7b/7c/7d.
+  - **7a (✅ done):** Static preview path — `preview.html` + `js/preview/*` stubs (storage, auth, player, youtube-api, rss-fetcher) + deterministic `mock-data.js`. Uses an HTML import map to redirect production module URLs to stubs at load time, so `main.js` runs unmodified. Includes a viewport toggle (1280/1000/880/720) for testing the 900px narrow-layout breakpoint without resizing the window.
+  - **7b:** Settings drawer chassis + profile CRUD + keyword block/require + weight sliders + sweet-spot center/width.
+  - **7c:** Channel groups CRUD + pins/overrides editor + hidden videos panel (un-skip + un-watch).
+  - **7d:** Drive `appdata` backup — JSON export/restore of all profile + state stores.
 - **Stage 7:** Settings UI (profiles, channel groups, hidden videos) + Drive backup
 - **Stage 8:** Soft launch + kill criterion check
 

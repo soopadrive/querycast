@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QueryCast — Preview</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  /* Preview chrome — kept above the .app-shell so the real layout
+     measures from the same baseline as the production index.html. */
+  .preview-bar {
+    background: linear-gradient(135deg, #1f6feb22, #8957e522);
+    border-bottom: 1px solid var(--border);
+    padding: 0.7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    backdrop-filter: blur(10px);
+  }
+  .preview-bar .label {
+    color: var(--purple);
+    font-weight: 700;
+    font-family: var(--mono);
+  }
+  .preview-bar .hint {
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    margin-left: auto;
+  }
+  .preview-bar button {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.82rem;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .preview-bar button:hover { border-color: var(--blue); color: var(--blue); }
+  .preview-bar button.active {
+    background: var(--blue-bg);
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+  /* Wrap the real app shell inside a re-sizable frame so the toggle can
+     simulate the 900px breakpoint without resizing the actual window. */
+  .preview-frame {
+    margin: 0 auto;
+    transition: max-width 0.2s;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    min-height: 100vh;
+  }
+  .preview-frame.w-1280 { max-width: 1280px; }
+  .preview-frame.w-1000 { max-width: 1000px; }
+  .preview-frame.w-880  { max-width: 880px; }   /* below the 900px breakpoint */
+  .preview-frame.w-720  { max-width: 720px; }
+  /* Inside the framed preview, drop the .app-shell's own max-width so
+     its grid spans the frame, not 1280 within whatever the frame is. */
+  .preview-frame .app-shell { max-width: none; }
+</style>
+
+<!-- Import map: redirect production module URLs to preview stubs. The
+     keys are the *resolved* URLs of each import — relative specifiers
+     like `./storage.js` from /js/main.js resolve to /js/storage.js and
+     hit these mappings. Must come BEFORE any <script type="module">. -->
+<script type="importmap">
+{
+  "imports": {
+    "/js/storage.js":      "/js/preview/storage-stub.js",
+    "/js/auth.js":         "/js/preview/auth-stub.js",
+    "/js/player.js":       "/js/preview/player-stub.js",
+    "/js/youtube-api.js":  "/js/preview/youtube-api-stub.js",
+    "/js/rss-fetcher.js":  "/js/preview/rss-fetcher-stub.js"
+  }
+}
+</script>
+
+<!-- Stub the Tauri global before main.js destructures it at module load. -->
+<script>
+  window.__TAURI__ = {
+    core: {
+      invoke: (cmd, args) => {
+        console.info('[preview] invoke', cmd, args);
+        return Promise.resolve(null);
+      },
+    },
+    event: {
+      listen: () => Promise.resolve(() => {}),
+    },
+  };
+</script>
+</head>
+<body>
+
+<div class="preview-bar">
+  <span class="label">◆ PREVIEW</span>
+  <span class="hint">Viewport:</span>
+  <button data-width="1280" class="active">1280</button>
+  <button data-width="1000">1000</button>
+  <button data-width="880">880 (narrow)</button>
+  <button data-width="720">720</button>
+  <span class="hint" id="reset-hint">Reload page to reset state</span>
+</div>
+
+<div class="preview-frame w-1280" id="preview-frame">
+  <div class="app-shell">
+    <header>
+      <h1 class="logo">◆ QueryCast</h1>
+      <span class="status">v0.1 · Stage 7a (preview)</span>
+    </header>
+
+    <main>
+      <h2>Welcome to QueryCast</h2>
+      <p class="lead">A user-controlled YouTube subscription feed. Sign in with Google, see only what your filters allow, ranked by transparent rules you control.</p>
+
+      <div class="boot-status">
+        <div class="row" id="status-creds">
+          <span class="label">Google credentials</span>
+          <span class="value pending">Checking…</span>
+        </div>
+        <div class="row" id="status-idb">
+          <span class="label">Local storage</span>
+          <span class="value pending">Checking…</span>
+        </div>
+        <div class="row" id="status-profile">
+          <span class="label">Active profile</span>
+          <span class="value pending">Checking…</span>
+        </div>
+        <div class="row" id="status-auth">
+          <span class="label">Authentication</span>
+          <span class="value pending">Checking…</span>
+        </div>
+        <div class="row" id="status-quota">
+          <span class="label">API quota today</span>
+          <span class="value pending">Checking…</span>
+        </div>
+      </div>
+
+      <div class="auth-buttons">
+        <button class="primary" id="sign-in-btn" hidden>Sign in with Google</button>
+        <button class="secondary" id="sign-out-btn" hidden>Sign out</button>
+      </div>
+      <p class="note" id="auth-msg">Loading…</p>
+
+      <section id="feed-section" hidden>
+        <div class="feed-toolbar">
+          <nav class="feed-nav" role="tablist" aria-label="Feed view">
+            <button class="nav-tab active" data-view="today" role="tab" aria-selected="true">Today</button>
+            <button class="nav-tab" data-view="saved" role="tab" aria-selected="false">Saved</button>
+          </nav>
+          <button class="secondary" id="refresh-btn">Refresh</button>
+          <div class="profile-dropdown">
+            <button class="profile-trigger" id="profile-trigger" aria-haspopup="menu" aria-expanded="false">
+              <span class="profile-label">Profile</span>
+              <span class="profile-name" id="profile-name">Default</span>
+              <span class="caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="profile-menu" id="profile-menu" role="menu" hidden>
+              <div class="profile-menu-section">Active profile</div>
+              <div class="profile-menu-list" id="profile-menu-list"></div>
+              <div class="profile-menu-divider"></div>
+              <button class="profile-menu-item disabled" disabled title="Coming in Stage 7">
+                Manage profiles…
+              </button>
+            </div>
+          </div>
+        </div>
+        <p id="feed-status" class="note"></p>
+
+        <div class="feed-board" id="feed-board" hidden>
+          <div class="section-label" id="featured-label">Top picks · ranked by score</div>
+          <div class="featured-row" id="featured-row"></div>
+
+          <div class="section-label" id="grid-label">More from your subscriptions</div>
+          <div class="grid" id="grid"></div>
+        </div>
+
+        <p id="feed-empty" class="empty-state" hidden>No videos cached yet. Click <strong>Refresh</strong> to fetch your subscriptions.</p>
+      </section>
+    </main>
+
+    <footer>
+      <a href="https://github.com/soopadrive/querycast" target="_blank" rel="noopener">Source</a>
+      <span>·</span>
+      <span>Read-only · BYO Google credentials · Local-only state</span>
+    </footer>
+  </div>
+</div>
+
+<!-- Modal IFrame Player (Stage 6b) — same markup as production. -->
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
+  <div class="modal-player">
+    <button class="modal-close" id="modal-close" aria-label="Close player">×</button>
+    <div class="modal-stub" id="modal-stub"></div>
+    <div class="modal-fallback" id="modal-fallback" hidden>
+      <p>This video can't be embedded. <a href="#" target="_blank" rel="noopener">Open on youtube.com</a></p>
+    </div>
+    <div class="modal-info">
+      <span class="modal-rank" id="modal-rank">#1</span>
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-meta" id="modal-meta"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Action toast with undo (Stage 6b) — same markup as production. -->
+<div class="action-toast" id="action-toast" role="status" aria-live="polite" hidden>
+  <span class="toast-msg" id="toast-msg"></span>
+  <button class="toast-undo" id="toast-undo">Undo</button>
+</div>
+
+<!-- Production main.js — runs unmodified, but every external module
+     it imports is silently swapped to a stub via the import map above. -->
+<script type="module" src="/js/main.js"></script>
+
+<!-- Viewport toggle wiring. Inline because it's preview-only chrome. -->
+<script type="module">
+  const frame = document.getElementById('preview-frame');
+  const buttons = document.querySelectorAll('.preview-bar button[data-width]');
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      buttons.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      frame.className = `preview-frame w-${btn.dataset.width}`;
+    });
+  });
+</script>
+
+</body>
+</html>
