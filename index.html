@@ -46,6 +46,16 @@
       <button class="secondary" id="sign-out-btn" hidden>Sign out</button>
     </div>
     <p class="note" id="auth-msg">Loading…</p>
+
+    <section id="feed-section" hidden>
+      <div class="feed-header">
+        <h3>Your feed</h3>
+        <button class="secondary" id="refresh-btn">Refresh</button>
+      </div>
+      <p id="feed-status" class="note"></p>
+      <ul id="feed-list" class="feed-list"></ul>
+      <p id="feed-empty" class="empty-state" hidden>No videos cached yet. Click <strong>Refresh</strong> to fetch your subscriptions.</p>
+    </section>
   </main>
 
   <footer>
