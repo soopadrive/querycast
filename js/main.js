@@ -21,6 +21,7 @@ import {
 } from './video-actions.js';
 import { STORES } from './defaults.js';
 import { bindSettingsDrawer, openDrawer } from './settings-drawer.js';
+import { bindThemeToggle } from './theme.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -89,6 +90,7 @@ async function renderMainApp(db) {
   bindToast();
   bindFeedNav();
   bindProfileMenu();
+  bindThemeToggle();
   bindSettingsDrawer({
     onChange: async () => {
       await renderProfileMenu();

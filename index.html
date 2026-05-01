@@ -8,6 +8,22 @@
 <meta name="description" content="User-controlled YouTube subscription feed.">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<!-- Apply persisted theme synchronously before the stylesheet parses
+     so there's no flash-of-wrong-theme on cold load. (Stage 8a) -->
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('querycast.theme');
+      if (t === 'light' || t === 'dark') {
+        document.documentElement.setAttribute('data-theme', t);
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -15,7 +31,7 @@
 <div class="app-shell">
   <header>
     <h1 class="logo">◆ QueryCast</h1>
-    <span class="status">v0.1 · Stage 7d</span>
+    <span class="status">v0.1 · Stage 8a</span>
   </header>
 
   <main>
@@ -58,6 +74,7 @@
           <button class="nav-tab" data-view="saved" role="tab" aria-selected="false">Saved</button>
         </nav>
         <button class="secondary" id="refresh-btn">Refresh</button>
+        <button class="icon-btn" id="theme-toggle" title="Switch to light theme" aria-label="Switch to light theme">☀</button>
         <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Open settings">⚙</button>
         <div class="profile-dropdown">
           <button class="profile-trigger" id="profile-trigger" aria-haspopup="menu" aria-expanded="false">

@@ -1,6 +1,9 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-:root {
+/* Dark theme — also the default when no [data-theme] is set yet (e.g.,
+   first paint before the inline init script runs). */
+:root,
+:root[data-theme="dark"] {
   --bg: #0f1117;
   --bg-elev: #161b22;
   --bg-elev2: #21262d;
@@ -14,7 +17,53 @@
   --orange: #d29922;
   --red: #f85149;
   --purple: #d2a8ff;
+
+  /* Theme-aware tints + shadows promoted from formerly hardcoded values
+     so the light theme can override them in one place (Stage 8a). */
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.6);
+  --shadow-drawer: -16px 0 40px rgba(0, 0, 0, 0.5);
+  --drawer-backdrop: rgba(0, 0, 0, 0.55);
+  --badge-orange-bg: #d2992233;
+  --badge-red-bg: #f8514933;
+  --badge-blue-bg: #1f6feb33;
+  --badge-purple-bg: #d2a8ff33;
+  --pin-active-bg: #d2a8ff22;
+  --danger-hover-bg: rgba(248, 81, 73, 0.15);
+  --secondary-hover-bg: rgba(210, 168, 255, 0.15);
+
   --mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+}
+
+/* Light theme — palette borrowed from GitHub's well-tested light tokens
+   (proven contrast ratios). Modal player overlay stays dark in both
+   themes — videos look better against black. */
+:root[data-theme="light"] {
+  --bg: #ffffff;
+  --bg-elev: #f6f8fa;
+  --bg-elev2: #eaeef2;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text-dim: #59636e;
+  --text-bright: #0a0c10;
+  --blue: #0969da;
+  --blue-bg: #0969da1f;
+  --green: #1a7f37;
+  --orange: #9a6700;
+  --red: #cf222e;
+  --purple: #8250df;
+
+  --shadow-pop: 0 4px 12px rgba(31, 35, 40, 0.12);
+  --shadow-modal: 0 16px 32px rgba(31, 35, 40, 0.18);
+  --shadow-drawer: -8px 0 24px rgba(31, 35, 40, 0.12);
+  --drawer-backdrop: rgba(31, 35, 40, 0.35);
+  --badge-orange-bg: #9a67001a;
+  --badge-red-bg: #cf222e1a;
+  --badge-blue-bg: #0969da1a;
+  --badge-purple-bg: #8250df1a;
+  --pin-active-bg: #8250df14;
+  --danger-hover-bg: rgba(207, 34, 46, 0.10);
+  --secondary-hover-bg: rgba(130, 80, 223, 0.10);
 }
 
 body {
@@ -235,7 +284,7 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   padding: 0.4rem 0;
   min-width: 220px;
   z-index: 200;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-pop);
   font-size: 0.88rem;
 }
 .profile-menu-section {
@@ -438,10 +487,10 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   font-weight: 600;
   vertical-align: middle;
 }
-.badge.short { background: #d2992233; color: var(--orange); border: 1px solid var(--orange); }
-.badge.live { background: #f8514933; color: var(--red); border: 1px solid var(--red); }
-.badge.upcoming { background: #1f6feb33; color: var(--blue); border: 1px solid var(--blue); }
-.badge.pinned { background: #d2a8ff33; color: var(--purple); border: 1px solid var(--purple); }
+.badge.short { background: var(--badge-orange-bg); color: var(--orange); border: 1px solid var(--orange); }
+.badge.live { background: var(--badge-red-bg); color: var(--red); border: 1px solid var(--red); }
+.badge.upcoming { background: var(--badge-blue-bg); color: var(--blue); border: 1px solid var(--blue); }
+.badge.pinned { background: var(--badge-purple-bg); color: var(--purple); border: 1px solid var(--purple); }
 
 .score-pill {
   display: inline-block;
@@ -468,7 +517,7 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   border-radius: 8px;
   padding: 0.9rem 1rem;
   z-index: 50;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-pop);
   animation: qc-fade-in 0.15s;
 }
 .video-card:hover .info-card {
@@ -621,7 +670,7 @@ body.modal-open { overflow: hidden; }
   max-width: 1000px;
   width: 100%;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-modal);
   position: relative;
 }
 .modal-stub {
@@ -705,7 +754,7 @@ body.modal-open { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-pop);
   font-size: 0.88rem;
   z-index: 1100;
   opacity: 0;
@@ -738,7 +787,7 @@ body.modal-open { overflow: hidden; }
   border: 1px solid var(--purple);
   color: var(--purple);
 }
-.toast-secondary:hover { background: rgba(210, 168, 255, 0.15); }
+.toast-secondary:hover { background: var(--secondary-hover-bg); }
 
 footer {
   margin-top: 2rem;
@@ -863,7 +912,7 @@ main.setup { max-width: 720px; }
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--drawer-backdrop);
   z-index: 850;
   backdrop-filter: blur(2px);
 }
@@ -877,7 +926,7 @@ body.drawer-open { overflow: hidden; }
   width: min(440px, 92vw);
   background: var(--bg-elev);
   border-left: 1px solid var(--border);
-  box-shadow: -16px 0 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-drawer);
   z-index: 900;
   transform: translateX(100%);
   transition: transform 0.22s ease-out;
@@ -1036,7 +1085,7 @@ button.danger {
   font-size: 0.82rem;
 }
 button.danger:hover:not(:disabled) {
-  background: rgba(248, 81, 73, 0.15);
+  background: var(--danger-hover-bg);
 }
 button.danger:disabled,
 button.secondary:disabled,
@@ -1178,7 +1227,7 @@ button.primary:disabled {
 }
 .pin-toggle:hover { border-color: var(--purple); color: var(--purple); }
 .pin-toggle.active {
-  background: #d2a8ff22;
+  background: var(--pin-active-bg);
   border-color: var(--purple);
   color: var(--purple);
 }

@@ -43,6 +43,7 @@ querycast/
 │   ├── video-actions.js    # mark watched / save / not-interested + undo helpers
 │   ├── settings-drawer.js  # Settings drawer (Stage 7b–d) — profile CRUD + filters + weights + channels + groups + hidden + Drive backup
 │   ├── drive-backup.js     # Drive appdata JSON backup (Stage 7d)
+│   ├── theme.js            # Light/dark theme toggle + persistence (Stage 8a)
 │   └── preview/            # Static preview stubs (Stage 7a) — same exports as production peers
 │       ├── mock-data.js          # deterministic 15-video seed, default profile w/ pin + suppressed channel
 │       ├── storage-stub.js       # in-memory IDB replacement
@@ -137,7 +138,11 @@ Per the v3 plan (Tauri pivot):
   - **"See less from this channel" interlude (✅ done, between 7c and 7d):** The 5s undo toast on `✕ Hide` now carries an optional secondary purple button reading "See less from \[channel]". Click it → subtract 0.5 from the channel's *resolved* weight (`resolveChannelWeight` from scoring.js), clamp to [-2, +2], write to `profile.channelOverrides[channelId]`. The undo callback reverts both the hide AND the weight change atomically (capturing the prior override state in a closure). One-shot per hide — secondary button auto-hides after the first click so weight can't compound on the same hide.
   - **7d (✅ done):** Drive `appdata` backup (`js/drive-backup.js`). Single file `querycast-backup.json` in the per-app `appDataFolder` — created on first backup, replaced via Drive multipart `PATCH` on subsequent backups. Backs up `profiles + watched + saved + not_interested` (no videos, subscriptions, quota, or credentials). Restore wipes target stores then writes from the backup; refuses on schema mismatch. UI is the seventh drawer section: blurb + last-backup status row + Backup-now / Restore buttons + ok/error message. Preview path uses `js/preview/drive-backup-stub.js` (sessionStorage-backed) so the button states + status messages can be exercised without real Drive auth.
 
-- **Stage 8 (NEW — Polish + branding):** Light/dark theme toggle (CSS-variable-driven, persisted to IDB), refined branding (logo, icon, color palette consistency), accessibility pass (contrast ratios, ARIA labels, keyboard nav across the drawer + modal + toolbar), copy review across all empty states + status messages, transitions/animations consistency. Possibly an onboarding flow for first-run after BYO setup.
+- **Stage 8 (in progress — Polish + branding), sliced into 8a/8b/8c (+ optional 8d):**
+  - **8a (✅ done):** Theme system + toggle. Two themes (`dark` default, `light`) applied via `[data-theme]` on `<html>`. Hardcoded shadow / chip-tint / backdrop colors promoted to CSS variables (`--shadow-pop`, `--shadow-modal`, `--shadow-drawer`, `--drawer-backdrop`, `--badge-{orange,red,blue,purple}-bg`, `--pin-active-bg`, `--danger-hover-bg`, `--secondary-hover-bg`) so light theme can override them in one block. Light palette borrowed from GitHub's light tokens (proven contrast). Persistence via `localStorage` (UI preference, not user data). Inline pre-stylesheet `<script>` in `<head>` of both index.html and preview.html applies the persisted theme synchronously so there's no flash-of-wrong-theme on cold load. Toolbar gains a sun/moon button next to ⚙. Modal player overlay + thumbnail-badge overlays + video-player background stay dark in both themes — they're "media chrome", not theme-dependent.
+  - **8b:** Branding consistency — logo / icon refinement, palette consistency sweep, transition timings unified.
+  - **8c:** Accessibility + copy — keyboard nav audit (focus traps, tab order), ARIA labels, contrast verification on both themes, empty-state + status copy review.
+  - **(optional) 8d:** First-run onboarding after BYO setup. Likely deferrable to v1.1.
 - **Stage 9 (was Stage 8) — Soft launch + kill criterion check:** invite testers, daily journal, kill criterion check.
 - **Stage 7:** Settings UI (profiles, channel groups, hidden videos) + Drive backup
 - **Stage 8:** Soft launch + kill criterion check
