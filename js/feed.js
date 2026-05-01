@@ -5,7 +5,8 @@
 import { fetchSubscriptions } from './youtube-api.js';
 import { fetchChannelRss } from './rss-fetcher.js';
 import { createQueue } from './concurrency.js';
-import { put, del, getAll, STORES } from './storage.js';
+import { put, del, getAll } from './storage.js';
+import { STORES } from './defaults.js';
 
 const SUBSCRIPTIONS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const RSS_CONCURRENCY = 3;
