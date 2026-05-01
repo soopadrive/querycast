@@ -1,9 +1,9 @@
 // QueryCast entry point. Tauri's WebView2 loads this on launch.
-// Stage 1 boots the chassis: open IndexedDB, check for BYO credentials,
-// route to setup screen or main app placeholder. Auth lands in Stage 2.
+// Stage 2 wires up the PKCE auth flow on top of Stage 1's chassis.
 
 import { openDb, seedDefaults, getActiveProfile, getCredentials } from './storage.js';
 import { renderSetupScreen } from './setup-screen.js';
+import { signIn, signOut, isSignedIn, getValidAccessToken, AuthRequiredError } from './auth.js';
 
 bootApp();
 
@@ -27,10 +27,89 @@ async function bootApp() {
 }
 
 async function renderMainApp(db) {
+  setStatus('creds', 'Configured', 'ok');
   setStatus('idb', `Open · DB v${db.version} · ${db.objectStoreNames.length} stores`, 'ok');
+
   const profile = await getActiveProfile();
   setStatus('profile', profile ? `Active: ${profile.name}` : 'Not seeded', profile ? 'ok' : 'fail');
-  setStatus('creds', 'Configured', 'ok');
+
+  // Auth state
+  const signedIn = await isSignedIn();
+  if (signedIn) {
+    // Validate the token isn't already revoked.
+    try {
+      await getValidAccessToken();
+      setStatus('auth', 'Signed in', 'ok');
+      setSignedInUi();
+    } catch (err) {
+      if (err instanceof AuthRequiredError) {
+        setStatus('auth', 'Sign-in expired', 'fail');
+        setSignedOutUi();
+      } else {
+        setStatus('auth', `Token check failed: ${err.message}`, 'fail');
+        setSignedOutUi();
+      }
+    }
+  } else {
+    setStatus('auth', 'Signed out', 'info');
+    setSignedOutUi();
+  }
+
+  document.getElementById('sign-in-btn')?.addEventListener('click', handleSignIn);
+  document.getElementById('sign-out-btn')?.addEventListener('click', handleSignOut);
+}
+
+async function handleSignIn() {
+  const btn = document.getElementById('sign-in-btn');
+  const msg = document.getElementById('auth-msg');
+  btn.disabled = true;
+  msg.textContent = 'Opening browser… complete sign-in there, then return here.';
+
+  try {
+    await signIn();
+    setStatus('auth', 'Signed in', 'ok');
+    setSignedInUi();
+    msg.textContent = '';
+  } catch (err) {
+    btn.disabled = false;
+    msg.textContent = `Sign-in failed: ${err.message}`;
+    msg.className = 'note error';
+  }
+}
+
+async function handleSignOut() {
+  const btn = document.getElementById('sign-out-btn');
+  btn.disabled = true;
+  try {
+    await signOut();
+    setStatus('auth', 'Signed out', 'info');
+    setSignedOutUi();
+  } catch (err) {
+    btn.disabled = false;
+    document.getElementById('auth-msg').textContent = `Sign-out failed: ${err.message}`;
+  }
+}
+
+function setSignedInUi() {
+  const signIn = document.getElementById('sign-in-btn');
+  const signOut = document.getElementById('sign-out-btn');
+  const msg = document.getElementById('auth-msg');
+  signIn.hidden = true;
+  signOut.hidden = false;
+  signOut.disabled = false;
+  msg.textContent = "You're signed in. Subscriptions and feed render arrive in Stage 3.";
+  msg.className = 'note';
+}
+
+function setSignedOutUi() {
+  const signIn = document.getElementById('sign-in-btn');
+  const signOut = document.getElementById('sign-out-btn');
+  const msg = document.getElementById('auth-msg');
+  signIn.hidden = false;
+  signIn.disabled = false;
+  signOut.hidden = true;
+  msg.textContent = "You'll be redirected to your browser to sign in. Refresh tokens persist across launches.";
+  msg.className = 'note';
 }
 
 function setStatus(key, text, kind = 'ok') {

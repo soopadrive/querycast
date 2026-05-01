@@ -7,7 +7,8 @@
 use std::thread;
 use std::time::Duration;
 
-use tauri::{Emitter, WebviewWindow};
+use tauri::{AppHandle, Emitter, WebviewWindow};
+use tauri_plugin_shell::ShellExt;
 use tiny_http::{Header, Response, Server};
 
 const LISTENER_TIMEOUT_SECS: u64 = 300; // 5 minutes for user to complete OAuth
@@ -56,6 +57,11 @@ pub fn start_oauth_listener(window: WebviewWindow) -> Result<u16, String> {
     });
 
     Ok(port)
+}
+
+#[tauri::command]
+pub fn open_url(app: AppHandle, url: String) -> Result<(), String> {
+    app.shell().open(url, None).map_err(|e| e.to_string())
 }
 
 fn parse_query_param(url: &str, key: &str) -> Option<String> {

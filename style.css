@@ -98,26 +98,45 @@ h2 {
 .boot-status .value.fail { color: var(--red); }
 .boot-status .value.pending { color: var(--orange); }
 
-button.primary {
-  background: var(--blue);
-  color: var(--bg);
-  border: 1px solid var(--blue);
+.auth-buttons {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+button.primary, button.secondary {
   padding: 0.7rem 1.5rem;
   border-radius: 6px;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: filter 0.15s;
+  transition: filter 0.15s, background 0.15s;
+  font-family: inherit;
 }
 
+button.primary {
+  background: var(--blue);
+  color: var(--bg);
+  border: 1px solid var(--blue);
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+button.secondary:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
+
 button.primary:hover:not(:disabled) { filter: brightness(1.1); }
-button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .note {
   color: var(--text-dim);
   font-size: 0.82rem;
   margin-top: 0.7rem;
 }
+
+.note.error { color: var(--red); }
 
 footer {
   margin-top: 2rem;

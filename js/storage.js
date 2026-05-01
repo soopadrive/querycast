@@ -121,3 +121,16 @@ export async function saveCredentials({ clientId, clientSecret }) {
 export async function clearCredentials() {
   await del(STORES.credentials, 'oauth');
 }
+
+export async function getTokens() {
+  const result = await get(STORES.credentials, 'tokens');
+  return result || null;
+}
+
+export async function saveTokens({ accessToken, refreshToken, expiresAt }) {
+  await put(STORES.credentials, { id: 'tokens', accessToken, refreshToken, expiresAt });
+}
+
+export async function clearTokens() {
+  await del(STORES.credentials, 'tokens');
+}

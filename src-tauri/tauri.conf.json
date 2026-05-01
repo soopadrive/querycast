@@ -9,6 +9,7 @@
     "beforeDevCommand": ""
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "QueryCast",
