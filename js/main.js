@@ -12,6 +12,7 @@ import {
 } from './auth.js';
 import { refreshFeed, getRenderableFeed } from './feed.js';
 import { getDailyUsage, getQuotaCap } from './quota.js';
+import { scoreBreakdown } from './scoring.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -97,7 +98,8 @@ async function handleSignOut() {
     await signOut();
     setStatus('auth', 'Signed out', 'info');
     setSignedOutUi();
-    document.getElementById('feed-list').innerHTML = '';
+    document.getElementById('featured-row').innerHTML = '';
+    document.getElementById('grid').innerHTML = '';
   } catch (err) {
     btn.disabled = false;
     document.getElementById('auth-msg').textContent = `Sign-out failed: ${err.message}`;
@@ -152,59 +154,108 @@ async function updateQuotaStatus() {
 }
 
 async function renderCachedFeed() {
-  const feed = await getRenderableFeed();
-  const list = document.getElementById('feed-list');
+  const [profile, feed] = await Promise.all([getActiveProfile(), getRenderableFeed()]);
+  const board = document.getElementById('feed-board');
   const empty = document.getElementById('feed-empty');
+  const featuredRow = document.getElementById('featured-row');
+  const grid = document.getElementById('grid');
+  const featuredLabel = document.getElementById('featured-label');
+  const gridLabel = document.getElementById('grid-label');
 
   if (feed.length === 0) {
-    list.innerHTML = '';
+    board.hidden = true;
     empty.hidden = false;
+    featuredRow.innerHTML = '';
+    grid.innerHTML = '';
     return;
   }
 
   empty.hidden = true;
-  list.innerHTML = feed.slice(0, 100).map(renderItem).join('');
-  list.querySelectorAll('.feed-item').forEach((el) => {
-    el.addEventListener('click', () => {
+  board.hidden = false;
+
+  const top = feed.slice(0, 3);
+  const rest = feed.slice(3, 100);
+
+  featuredLabel.hidden = false;
+  featuredRow.innerHTML = top.map((v, i) => videoCardHTML(v, i + 1, profile)).join('');
+
+  gridLabel.hidden = rest.length === 0;
+  grid.innerHTML = rest.map((v, i) => videoCardHTML(v, i + 4, profile)).join('');
+
+  document.querySelectorAll('.video-card').forEach((el) => {
+    el.addEventListener('click', (event) => {
+      // Ignore clicks that originated inside the hover info card so users
+      // can highlight description text without the modal/redirect firing.
+      if (event.target.closest('.info-card')) return;
       const id = el.dataset.videoId;
       if (id) invoke('open_url', { url: `https://www.youtube.com/watch?v=${id}` });
     });
   });
 }
 
-function renderItem(v) {
+function videoCardHTML(v, rank, profile) {
+  const featured = rank === 1;
   const date = formatRelativeDate(v.publishedAt);
   const durationLabel = v.duration ? formatDuration(v.duration) : '';
   const viewLabel = v.viewCount ? formatViewCount(v.viewCount) : '';
-  const isLive = v.liveStatus === 'live' || v.liveStatus === 'upcoming';
 
-  const badges = [];
-  if (v._pinned) badges.push(`<span class="badge pinned">PINNED</span>`);
-  if (v.isShort) badges.push(`<span class="badge short">SHORT</span>`);
-  if (v.liveStatus === 'live') badges.push(`<span class="badge live">LIVE</span>`);
-  else if (v.liveStatus === 'upcoming') badges.push(`<span class="badge upcoming">UPCOMING</span>`);
-
-  const metaParts = [escapeHtml(v.channelTitle)];
-  if (viewLabel) metaParts.push(viewLabel);
-  metaParts.push(date);
+  const statBadges = [];
+  if (v._pinned) statBadges.push(`<span class="badge pinned">PINNED</span>`);
+  if (v.isShort) statBadges.push(`<span class="badge short">SHORT</span>`);
+  if (v.liveStatus === 'live') statBadges.push(`<span class="badge live">LIVE</span>`);
+  else if (v.liveStatus === 'upcoming') statBadges.push(`<span class="badge upcoming">UPCOMING</span>`);
 
   const scorePill =
     typeof v._score === 'number'
       ? `<span class="score-pill" title="Ranking score">${v._score.toFixed(2)}</span>`
       : '';
 
+  const breakdownHtml = profile ? formatBreakdown(v, profile) : '';
+  const desc = (v.description || '').trim();
+  const descHtml = desc
+    ? `<div class="desc">${escapeHtml(desc)}</div>`
+    : `<div class="desc empty">No description.</div>`;
+
   return `
-    <li class="feed-item" data-video-id="${escapeAttr(v.videoId)}">
+    <div class="video-card${featured ? ' featured' : ''}" data-video-id="${escapeAttr(v.videoId)}">
       <div class="thumb-wrap">
         <img class="thumb" src="${escapeAttr(v.thumbnailUrl)}" loading="lazy" alt="">
+        <span class="rank-badge">#${rank}</span>
         ${durationLabel ? `<span class="duration-badge">${durationLabel}</span>` : ''}
       </div>
       <div class="info">
-        <div class="title">${escapeHtml(v.title)}${scorePill}</div>
-        <div class="meta">${metaParts.join(' · ')} ${badges.join(' ')}</div>
+        <div>
+          <div class="title">${escapeHtml(v.title)}</div>
+          <div class="meta-line">${escapeHtml(v.channelTitle || '')}</div>
+        </div>
+        <div class="stats">
+          ${viewLabel ? `<span>${viewLabel}</span><span>·</span>` : ''}
+          <span>${date}</span>
+          ${scorePill}
+          ${statBadges.join(' ')}
+        </div>
       </div>
-    </li>
+      ${breakdownHtml ? `<div class="info-card">${descHtml}<div class="score-breakdown">${breakdownHtml}</div></div>` : ''}
+    </div>
   `;
+}
+
+function formatBreakdown(v, profile) {
+  if (typeof v._score !== 'number') return '';
+  const b = scoreBreakdown(v, profile);
+  const channelLabel = `channel ${b.channel >= 0 ? '+' : ''}${b.channel.toFixed(2)}`;
+  const channelHtml =
+    b.channel < 0 ? `<span class="neg">${channelLabel} (suppressed)</span>` : channelLabel;
+  const parts = [
+    `recency ${b.recency.toFixed(2)}`,
+    `velocity ${b.velocity.toFixed(2)}`,
+    channelHtml,
+    `length-fit ${b.lengthFit.toFixed(2)}`,
+  ];
+  if (b.pinBoost > 0) {
+    parts.push(`<span class="pin">pin +${b.pinBoost.toFixed(2)}</span>`);
+  }
+  return `<span class="label">Score: ${v._score.toFixed(2)}</span><br>${parts.join(' · ')}`;
 }
 
 function formatDuration(seconds) {

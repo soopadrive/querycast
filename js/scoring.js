@@ -78,13 +78,10 @@ export function isChannelPinned(channelId, profile) {
   return (profile.channelPins || []).includes(channelId);
 }
 
-// Score a video per ADR-007:
-//   recency  = clamp(1 - ageDays / ageMaxDays, 0, 1)
-//   velocity = log10(views / ageDays + 1) / 6
-//   lengthFit = exp(-0.5 * ((duration - center) / width)^2)
-//   score = w_recency*recency + w_velocity*velocity + w_channel*channelWeight
-//         + w_lengthFit*lengthFit + (pinned ? PIN_BOOST : 0)
-export function scoreVideo(video, profile) {
+// Compute the per-signal normalized values used by both scoreVideo and
+// the info-card breakdown. recency / velocity / lengthFit are 0..1.
+// channel is signed (resolveChannelWeight). pinBoost is 0 or PIN_BOOST.
+export function scoreBreakdown(video, profile) {
   const w = profile?.weights || {};
   const r = profile?.rules || {};
 
@@ -99,15 +96,24 @@ export function scoreVideo(video, profile) {
   const width = Math.max(1, w.sweetSpotWidthSec || 600);
   const lengthFit = Math.exp(-0.5 * Math.pow((duration - center) / width, 2));
 
-  const channelWeight = resolveChannelWeight(video.channelId, profile);
+  const channel = resolveChannelWeight(video.channelId, profile);
   const pinBoost = isChannelPinned(video.channelId, profile) ? PIN_BOOST : 0;
 
+  return { recency, velocity, channel, lengthFit, pinBoost };
+}
+
+// Score a video per ADR-007:
+//   score = w_recency*recency + w_velocity*velocity + w_channel*channelWeight
+//         + w_lengthFit*lengthFit + (pinned ? PIN_BOOST : 0)
+export function scoreVideo(video, profile) {
+  const w = profile?.weights || {};
+  const b = scoreBreakdown(video, profile);
   return (
-    (w.recency || 0) * recency +
-    (w.velocity || 0) * velocity +
-    (w.channel || 0) * channelWeight +
-    (w.lengthFit || 0) * lengthFit +
-    pinBoost
+    (w.recency || 0) * b.recency +
+    (w.velocity || 0) * b.velocity +
+    (w.channel || 0) * b.channel +
+    (w.lengthFit || 0) * b.lengthFit +
+    b.pinBoost
   );
 }
 

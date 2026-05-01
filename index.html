@@ -15,7 +15,7 @@
 <div class="app-shell">
   <header>
     <h1 class="logo">◆ QueryCast</h1>
-    <span class="status">v0.1 · Stage 1</span>
+    <span class="status">v0.1 · Stage 6a</span>
   </header>
 
   <main>
@@ -57,7 +57,15 @@
         <button class="secondary" id="refresh-btn">Refresh</button>
       </div>
       <p id="feed-status" class="note"></p>
-      <ul id="feed-list" class="feed-list"></ul>
+
+      <div class="feed-board" id="feed-board" hidden>
+        <div class="section-label" id="featured-label">Top picks · ranked by score</div>
+        <div class="featured-row" id="featured-row"></div>
+
+        <div class="section-label" id="grid-label">More from your subscriptions</div>
+        <div class="grid" id="grid"></div>
+      </div>
+
       <p id="feed-empty" class="empty-state" hidden>No videos cached yet. Click <strong>Refresh</strong> to fetch your subscriptions.</p>
     </section>
   </main>
