@@ -333,6 +333,11 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
 .video-card:hover {
   border-color: var(--blue);
   transform: translateY(-2px);
+  /* Bump the hovered card's stacking context above its siblings so the
+     info-card that drops below isn't painted-over by the next-row cards.
+     Without this, transform alone establishes a stacking context but at
+     z-auto, which ties with sibling cards and DOM order wins. */
+  z-index: 60;
 }
 .video-card .thumb-wrap {
   position: relative;
