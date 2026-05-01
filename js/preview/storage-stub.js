@@ -7,17 +7,20 @@
 // to undo all interactions.
 
 import { STORES } from '../defaults.js';
-import { MOCK_VIDEOS, MOCK_PROFILE, MOCK_CREDS, MOCK_TOKENS } from './mock-data.js';
+import {
+  MOCK_VIDEOS, MOCK_PROFILE, MOCK_CREDS, MOCK_TOKENS,
+  MOCK_SUBSCRIPTIONS, MOCK_NOT_INTERESTED, MOCK_WATCHED, MOCK_SAVED,
+} from './mock-data.js';
 
 const data = {
   [STORES.videos]: MOCK_VIDEOS.slice(),
-  [STORES.subscriptions]: [],
+  [STORES.subscriptions]: MOCK_SUBSCRIPTIONS.slice(),
   [STORES.tombstones]: [],
   [STORES.quota]: [],
   [STORES.profiles]: [structuredClone(MOCK_PROFILE)],
-  [STORES.watched]: [],
-  [STORES.saved]: [],
-  [STORES.notInterested]: [],
+  [STORES.watched]: MOCK_WATCHED.slice(),
+  [STORES.saved]: MOCK_SAVED.slice(),
+  [STORES.notInterested]: MOCK_NOT_INTERESTED.slice(),
   [STORES.credentials]: [structuredClone(MOCK_CREDS), structuredClone(MOCK_TOKENS)],
 };
 

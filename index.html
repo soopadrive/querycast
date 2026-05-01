@@ -15,7 +15,7 @@
 <div class="app-shell">
   <header>
     <h1 class="logo">◆ QueryCast</h1>
-    <span class="status">v0.1 · Stage 7b</span>
+    <span class="status">v0.1 · Stage 7c</span>
   </header>
 
   <main>
@@ -244,6 +244,45 @@
         </div>
 
         <button class="secondary" id="reset-defaults">Reset filters + weights to defaults</button>
+      </div>
+    </section>
+
+    <section class="drawer-section" id="section-channels">
+      <h3 class="section-toggle" aria-expanded="false" tabindex="0" role="button">
+        <span class="chevron" aria-hidden="true">▾</span>
+        Channels
+      </h3>
+      <div class="section-body" hidden>
+        <input type="search" id="channel-search" class="field-input" placeholder="Filter channels…" />
+        <div class="channel-list" id="channel-list"></div>
+      </div>
+    </section>
+
+    <section class="drawer-section" id="section-groups">
+      <h3 class="section-toggle" aria-expanded="false" tabindex="0" role="button">
+        <span class="chevron" aria-hidden="true">▾</span>
+        Channel groups
+      </h3>
+      <div class="section-body" hidden>
+        <div class="groups-list" id="groups-list"></div>
+        <button class="secondary" id="group-add">+ New group</button>
+      </div>
+    </section>
+
+    <section class="drawer-section" id="section-hidden">
+      <h3 class="section-toggle" aria-expanded="false" tabindex="0" role="button">
+        <span class="chevron" aria-hidden="true">▾</span>
+        Hidden videos
+      </h3>
+      <div class="section-body" hidden>
+        <div class="hidden-group">
+          <h4 class="subsection">Hidden by you <span class="count" id="hidden-skip-count">0</span></h4>
+          <ul class="hidden-list" id="hidden-skip-list"></ul>
+        </div>
+        <div class="hidden-group">
+          <h4 class="subsection">Already watched <span class="count" id="hidden-watch-count">0</span></h4>
+          <ul class="hidden-list" id="hidden-watch-list"></ul>
+        </div>
       </div>
     </section>
   </div>

@@ -272,3 +272,35 @@ export const MOCK_TOKENS = {
   refreshToken: 'mock-refresh-token',
   expiresAt: NOW + 60 * 60 * 1000,
 };
+
+// Mock subscriptions cache — Stage 7c needs a known set of channels
+// to populate the Channels section. Each row mirrors what
+// fetchSubscriptions() would write.
+export const MOCK_SUBSCRIPTIONS = [
+  { channelId: 'UC_tinkerer',   title: 'Tech Tinkerer',         cachedAt: NOW },
+  { channelId: 'UC_numberphile', title: 'Numberphile Plus',     cachedAt: NOW },
+  { channelId: 'UC_swreality',  title: 'Software Reality',      cachedAt: NOW },
+  { channelId: 'UC_workflow',   title: 'Workflow Critic',       cachedAt: NOW },
+  { channelId: 'UC_gamedecoded', title: 'GameDecoded',          cachedAt: NOW },
+  { channelId: 'UC_compiler',   title: 'Compiler Notes',        cachedAt: NOW },
+  { channelId: 'UC_keys',       title: 'Keys & Solder',         cachedAt: NOW },
+  { channelId: 'UC_garage',     title: 'Garage Therapy',        cachedAt: NOW },
+  { channelId: 'UC_cup',        title: 'Cup & Crema',           cachedAt: NOW },
+  { channelId: 'UC_slow',       title: 'Slow Living Channel',   cachedAt: NOW },
+  { channelId: 'UC_techhype',   title: 'TechHype Daily',        cachedAt: NOW },
+  { channelId: 'UC_garden',     title: 'Backyard Botany',       cachedAt: NOW },
+  { channelId: 'UC_ambient',    title: 'Drift Sessions',        cachedAt: NOW },
+  { channelId: 'UC_quicklinux', title: 'Quick Linux',           cachedAt: NOW },
+];
+
+// Pre-seed a few action states so the Hidden Videos section + the
+// Saved tab have something to show on first load.
+export const MOCK_NOT_INTERESTED = [
+  { videoId: 'mock-014', skippedAt: NOW - 2 * 60 * 60 * 1000 },
+];
+export const MOCK_WATCHED = [
+  { videoId: 'mock-008', watchedAt: NOW - 1 * 60 * 60 * 1000 },
+];
+export const MOCK_SAVED = [
+  { videoId: 'mock-002', savedAt: NOW - 30 * 60 * 1000 },
+];

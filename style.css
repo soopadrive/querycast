@@ -1101,4 +1101,206 @@ button.primary:disabled {
   letter-spacing: 0.05em;
   font-weight: 600;
   margin: 0.6rem 0 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.subsection .count {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 0.45rem;
+  font-size: 0.72rem;
+  color: var(--blue);
+  font-family: var(--mono);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* === Channels section (Stage 7c) === */
+#channel-search {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  margin-bottom: 0.4rem;
+}
+#channel-search:focus { outline: none; border-color: var(--blue); }
+
+.channel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.channel-row {
+  display: grid;
+  grid-template-columns: auto 1fr 80px;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.35rem 0.4rem;
+  border-radius: 4px;
+}
+.channel-row:hover { background: var(--bg-elev2); }
+.channel-row .channel-title {
+  color: var(--text);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pin-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.pin-toggle:hover { border-color: var(--purple); color: var(--purple); }
+.pin-toggle.active {
+  background: #d2a8ff22;
+  border-color: var(--purple);
+  color: var(--purple);
+}
+.channel-weight {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  width: 100%;
+  text-align: center;
+}
+.channel-weight:focus { outline: none; border-color: var(--blue); }
+
+/* === Channel groups section (Stage 7c) === */
+.groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+.group-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.group-card summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.88rem;
+  list-style: none;
+}
+.group-card summary::-webkit-details-marker { display: none; }
+.group-card summary::before {
+  content: '▸';
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  transition: transform 0.15s;
+}
+.group-card[open] summary::before { transform: rotate(90deg); }
+.group-summary-name {
+  color: var(--text-bright);
+  font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.group-summary-count,
+.group-summary-weight {
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+}
+.group-edit {
+  padding: 0.55rem 0.8rem 0.7rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.group-members {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.group-member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.83rem;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0.15rem 0.2rem;
+  border-radius: 3px;
+}
+.group-member-row:hover { background: var(--bg-elev2); }
+.group-member-row input { accent-color: var(--blue); }
+
+/* === Hidden videos section (Stage 7c) === */
+.hidden-group + .hidden-group {
+  margin-top: 0.7rem;
+}
+.hidden-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.hidden-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
+.hidden-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.hidden-title {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hidden-channel {
+  color: var(--text-dim);
+  font-size: 0.74rem;
+}
+.hidden-row button.secondary {
+  font-size: 0.76rem;
+  padding: 0.3rem 0.55rem;
+  flex-shrink: 0;
 }
