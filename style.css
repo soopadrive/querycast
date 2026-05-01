@@ -321,12 +321,14 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   cursor: pointer;
   background: var(--bg-elev);
   border-radius: 8px;
-  overflow: hidden;
   border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   transition: border-color 0.15s, transform 0.15s;
   position: relative;
+  /* No overflow:hidden here — the hover info-card needs to drop below
+     the card without being clipped. Top-corner rounding is handled by
+     .thumb-wrap below. */
 }
 .video-card:hover {
   border-color: var(--blue);
@@ -337,6 +339,7 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   aspect-ratio: 16 / 9;
   background: var(--bg-elev2);
   overflow: hidden;
+  border-radius: 8px 8px 0 0;
 }
 .video-card .thumb {
   width: 100%;
