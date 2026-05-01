@@ -32,6 +32,11 @@
   --danger-hover-bg: rgba(248, 81, 73, 0.15);
   --secondary-hover-bg: rgba(210, 168, 255, 0.15);
 
+  /* Transition timing tokens (Stage 8b). One scale across the app.
+     Existing rules use these via var() so future styles stay aligned. */
+  --t-base: 0.15s;
+  --t-slow: 0.22s;
+
   --mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
 }
 
@@ -105,8 +110,13 @@ header {
 
 .logo {
   font-size: 1.5rem;
-  color: var(--purple);
   font-weight: 700;
+  /* Brand gradient — blue (curation) → purple (special) — adapts per
+     theme since both stops resolve from theme tokens. */
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .status {
@@ -168,7 +178,7 @@ button.primary, button.secondary {
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: filter 0.15s, background 0.15s;
+  transition: filter var(--t-base), background var(--t-base);
   font-family: inherit;
 }
 
@@ -228,7 +238,7 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color var(--t-base), border-color var(--t-base), background var(--t-base);
 }
 .nav-tab:hover { color: var(--text-bright); }
 .nav-tab.active {
@@ -252,7 +262,7 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  transition: border-color 0.15s;
+  transition: border-color var(--t-base);
 }
 .profile-trigger:hover { border-color: var(--blue); }
 .profile-trigger .profile-label {
@@ -268,7 +278,7 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
 .profile-trigger .caret {
   color: var(--text-dim);
   font-size: 0.78rem;
-  transition: transform 0.15s;
+  transition: transform var(--t-base);
 }
 .profile-trigger[aria-expanded="true"] .caret {
   transform: rotate(180deg);
@@ -373,7 +383,7 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color var(--t-base), transform var(--t-base);
   position: relative;
   /* No overflow:hidden here — the hover info-card needs to drop below
      the card without being clipped. Top-corner rounding is handled by
@@ -518,7 +528,7 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   padding: 0.9rem 1rem;
   z-index: 50;
   box-shadow: var(--shadow-pop);
-  animation: qc-fade-in 0.15s;
+  animation: qc-fade-in var(--t-base);
 }
 .video-card:hover .info-card {
   display: block;
@@ -639,7 +649,7 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
   font-family: inherit;
   font-size: 0.78rem;
   font-weight: 600;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition: border-color var(--t-base), color var(--t-base), background var(--t-base);
 }
 .action-btn:hover {
   background: var(--bg-elev);
@@ -758,7 +768,7 @@ body.modal-open { overflow: hidden; }
   font-size: 0.88rem;
   z-index: 1100;
   opacity: 0;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity var(--t-base), transform var(--t-base);
   pointer-events: none;
 }
 .action-toast.show {
@@ -904,7 +914,7 @@ main.setup { max-width: 720px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color var(--t-base), color var(--t-base);
 }
 .icon-btn:hover { border-color: var(--blue); color: var(--blue); }
 
@@ -929,7 +939,7 @@ body.drawer-open { overflow: hidden; }
   box-shadow: var(--shadow-drawer);
   z-index: 900;
   transform: translateX(100%);
-  transition: transform 0.22s ease-out;
+  transition: transform var(--t-slow) ease-out;
   display: flex;
   flex-direction: column;
 }
@@ -995,7 +1005,7 @@ body.drawer-open { overflow: hidden; }
 .section-toggle .chevron {
   font-size: 0.75rem;
   color: var(--text-dim);
-  transition: transform 0.15s;
+  transition: transform var(--t-base);
   width: 1em;
   display: inline-block;
 }
@@ -1272,7 +1282,7 @@ button.primary:disabled {
   content: '▸';
   color: var(--text-dim);
   font-size: 0.7rem;
-  transition: transform 0.15s;
+  transition: transform var(--t-base);
 }
 .group-card[open] summary::before { transform: rotate(90deg); }
 .group-summary-name {
