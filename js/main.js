@@ -20,6 +20,7 @@ import {
   markNotInterested, unmarkNotInterested,
 } from './video-actions.js';
 import { STORES } from './defaults.js';
+import { bindSettingsDrawer, openDrawer } from './settings-drawer.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -88,6 +89,20 @@ async function renderMainApp(db) {
   bindToast();
   bindFeedNav();
   bindProfileMenu();
+  bindSettingsDrawer({
+    onChange: async () => {
+      await renderProfileMenu();
+      await renderCachedFeed();
+      const profile = await getActiveProfile();
+      setStatus('profile', profile ? `Active: ${profile.name}` : 'Not seeded', profile ? 'ok' : 'fail');
+    },
+  });
+  // "Manage profiles…" entry in the profile dropdown jumps into the
+  // drawer focused on the profile section.
+  document.getElementById('profile-manage')?.addEventListener('click', async () => {
+    closeProfileMenu();
+    await openDrawer('section-profile');
+  });
   await renderProfileMenu();
   // Warm the IFrame API in the background so the first modal open is snappy.
   loadIframeApi().catch((err) => console.warn('IFrame API preload failed', err));

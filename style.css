@@ -833,3 +833,272 @@ main.setup { max-width: 720px; }
   font-size: 0.85rem;
   margin: 0;
 }
+
+/* === Toolbar icon button (Stage 7b — settings cog) === */
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+.icon-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+/* === Settings drawer (Stage 7b) === */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 850;
+  backdrop-filter: blur(2px);
+}
+body.drawer-open { overflow: hidden; }
+
+.settings-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, 92vw);
+  background: var(--bg-elev);
+  border-left: 1px solid var(--border);
+  box-shadow: -16px 0 40px rgba(0, 0, 0, 0.5);
+  z-index: 900;
+  transform: translateX(100%);
+  transition: transform 0.22s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+.settings-drawer.active {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev2);
+  flex-shrink: 0;
+}
+.drawer-header h2 {
+  color: var(--blue);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.drawer-close {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-family: inherit;
+  line-height: 1;
+}
+.drawer-close:hover { border-color: var(--red); color: var(--red); }
+
+.drawer-body {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0.4rem 0;
+}
+
+.drawer-section { border-bottom: 1px solid var(--border); }
+.drawer-section:last-child { border-bottom: none; }
+
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.2rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin: 0;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.section-toggle:hover { background: var(--bg-elev2); }
+.section-toggle .chevron {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+  width: 1em;
+  display: inline-block;
+}
+.section-toggle[aria-expanded="false"] .chevron {
+  transform: rotate(-90deg);
+}
+
+.section-body {
+  padding: 0.4rem 1.2rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+/* Explicit override — `display: flex` above wins against the user-agent
+   `[hidden] { display: none }` rule, so the collapsed state needs an
+   explicit selector. */
+.section-body[hidden] { display: none; }
+
+/* Field controls */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.field > span { color: var(--text); font-weight: 500; }
+.field > span em {
+  color: var(--text-dim);
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+.field input[type="text"],
+.field input[type="number"],
+.field select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.88rem;
+}
+.field input[type="text"]:focus,
+.field input[type="number"]:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.88rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.checkbox-row input { accent-color: var(--blue); }
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+.action-row button {
+  flex: 1 1 auto;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.8rem;
+}
+button.danger {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+button.danger:hover:not(:disabled) {
+  background: rgba(248, 81, 73, 0.15);
+}
+button.danger:disabled,
+button.secondary:disabled,
+button.primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Keyword chips */
+.keyword-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-height: 1.7rem;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-elev2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.2rem 0.45rem 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-family: var(--mono);
+}
+.chip-x {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0 0.2rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1;
+}
+.chip-x:hover { color: var(--red); }
+.chip-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.78rem;
+}
+
+/* Sliders */
+.slider-field {
+  gap: 0.25rem;
+}
+.slider-field > span {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.value-display {
+  color: var(--blue);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.slider-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--blue);
+}
+
+.subsection {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin: 0.6rem 0 0.2rem;
+}

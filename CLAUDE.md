@@ -41,6 +41,7 @@ querycast/
 │   ├── scoring.js          # pure filter + score functions (Stage 5, ADR-007)
 │   ├── player.js           # YouTube IFrame Player modal (Stage 6b)
 │   ├── video-actions.js    # mark watched / save / not-interested + undo helpers
+│   ├── settings-drawer.js  # Settings drawer (Stage 7b) — profile CRUD + filters + weights
 │   └── preview/            # Static preview stubs (Stage 7a) — same exports as production peers
 │       ├── mock-data.js          # deterministic 15-video seed, default profile w/ pin + suppressed channel
 │       ├── storage-stub.js       # in-memory IDB replacement
@@ -129,7 +130,7 @@ Per the v3 plan (Tauri pivot):
   - **6c:** Toolbar with Today / Saved nav tabs and a profile dropdown. `getSavedFeed()` joins `STORES.saved` against the videos cache, sorts by savedAt desc, drops the featured-row hierarchy in Saved view. Profile dropdown lists profiles from IDB with active marked; "Manage profiles…" is the Stage 7 hook.
 - **Stage 7 (in progress):** Settings UI + Drive backup, sliced into 7a/7b/7c/7d.
   - **7a (✅ done):** Static preview path — `preview.html` + `js/preview/*` stubs (storage, auth, player, youtube-api, rss-fetcher) + deterministic `mock-data.js`. Uses an HTML import map to redirect production module URLs to stubs at load time, so `main.js` runs unmodified. Includes a viewport toggle (1280/1000/880/720) for testing the 900px narrow-layout breakpoint without resizing the window.
-  - **7b:** Settings drawer chassis + profile CRUD + keyword block/require + weight sliders + sweet-spot center/width.
+  - **7b (✅ done):** Settings drawer chassis (`js/settings-drawer.js` + drawer markup + CSS slide-in panel) hosting three collapsible sections in v1: Profile (rename, add, duplicate, delete, set-active), Discovery filters (block/require keyword chip editors, duration/age/views numeric inputs, hide-shorts/live/podcasts toggles), Scoring weights (4 sliders 0–1 with live value display, sweet-spot center/width inputs, Reset to defaults). Drawer trigger: ⚙ button in toolbar + the now-enabled "Manage profiles…" entry (jumps directly to the profile section). Every input writes to IDB on change, then notifies main.js to re-render the feed + profile dropdown.
   - **7c:** Channel groups CRUD + pins/overrides editor + hidden videos panel (un-skip + un-watch).
   - **7d:** Drive `appdata` backup — JSON export/restore of all profile + state stores.
 - **Stage 7:** Settings UI (profiles, channel groups, hidden videos) + Drive backup

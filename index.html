@@ -15,7 +15,7 @@
 <div class="app-shell">
   <header>
     <h1 class="logo">◆ QueryCast</h1>
-    <span class="status">v0.1 · Stage 6c</span>
+    <span class="status">v0.1 · Stage 7b</span>
   </header>
 
   <main>
@@ -58,6 +58,7 @@
           <button class="nav-tab" data-view="saved" role="tab" aria-selected="false">Saved</button>
         </nav>
         <button class="secondary" id="refresh-btn">Refresh</button>
+        <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Open settings">⚙</button>
         <div class="profile-dropdown">
           <button class="profile-trigger" id="profile-trigger" aria-haspopup="menu" aria-expanded="false">
             <span class="profile-label">Profile</span>
@@ -68,7 +69,7 @@
             <div class="profile-menu-section">Active profile</div>
             <div class="profile-menu-list" id="profile-menu-list"></div>
             <div class="profile-menu-divider"></div>
-            <button class="profile-menu-item disabled" disabled title="Coming in Stage 7">
+            <button class="profile-menu-item" id="profile-manage">
               Manage profiles…
             </button>
           </div>
@@ -116,6 +117,137 @@
   <span class="toast-msg" id="toast-msg"></span>
   <button class="toast-undo" id="toast-undo">Undo</button>
 </div>
+
+<!-- Settings drawer (Stage 7b) -->
+<div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+<aside class="settings-drawer" id="settings-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="settings-heading">
+  <header class="drawer-header">
+    <h2 id="settings-heading">Settings</h2>
+    <button class="drawer-close" id="settings-close" aria-label="Close settings">×</button>
+  </header>
+
+  <div class="drawer-body">
+    <section class="drawer-section" id="section-profile">
+      <h3 class="section-toggle" aria-expanded="true" tabindex="0" role="button">
+        <span class="chevron" aria-hidden="true">▾</span>
+        Profile
+      </h3>
+      <div class="section-body">
+        <label class="field">
+          <span>Editing</span>
+          <select id="profile-edit-select"></select>
+        </label>
+        <label class="field">
+          <span>Name</span>
+          <input type="text" id="profile-name-input" />
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="profile-active-check" />
+          <span>Set as active profile</span>
+        </label>
+        <div class="action-row">
+          <button class="secondary" id="profile-add">+ New profile</button>
+          <button class="secondary" id="profile-duplicate">Duplicate</button>
+          <button class="danger" id="profile-delete">Delete</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="drawer-section" id="section-filters">
+      <h3 class="section-toggle" aria-expanded="true" tabindex="0" role="button">
+        <span class="chevron" aria-hidden="true">▾</span>
+        Discovery filters
+      </h3>
+      <div class="section-body">
+        <label class="field">
+          <span>Block keywords <em>(case-insensitive, title + description)</em></span>
+          <div class="keyword-list" id="kw-block-list"></div>
+          <input type="text" id="kw-block-input" placeholder="Add keyword + Enter" />
+        </label>
+
+        <label class="field">
+          <span>Require keywords <em>(whitelist mode — leave blank to disable)</em></span>
+          <div class="keyword-list" id="kw-require-list"></div>
+          <input type="text" id="kw-require-input" placeholder="Add keyword + Enter" />
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Min duration (sec)</span>
+            <input type="number" id="duration-min" min="0" />
+          </label>
+          <label class="field">
+            <span>Max duration (sec)</span>
+            <input type="number" id="duration-max" min="0" />
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Max age (days)</span>
+            <input type="number" id="age-max" min="1" />
+          </label>
+          <label class="field">
+            <span>Min view count</span>
+            <input type="number" id="views-min" min="0" />
+          </label>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="hide-shorts" />
+          <span>Hide Shorts (under 60s)</span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="hide-live" />
+          <span>Hide live + premieres</span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="hide-podcasts" />
+          <span>Hide podcasts (over 2hr)</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="drawer-section" id="section-scoring">
+      <h3 class="section-toggle" aria-expanded="false" tabindex="0" role="button">
+        <span class="chevron" aria-hidden="true">▾</span>
+        Scoring weights
+      </h3>
+      <div class="section-body" hidden>
+        <label class="field slider-field">
+          <span>Recency <span class="value-display" data-value-for="w-recency"></span></span>
+          <input type="range" id="w-recency" min="0" max="1" step="0.05" />
+        </label>
+        <label class="field slider-field">
+          <span>Velocity (views/day) <span class="value-display" data-value-for="w-velocity"></span></span>
+          <input type="range" id="w-velocity" min="0" max="1" step="0.05" />
+        </label>
+        <label class="field slider-field">
+          <span>Channel weight <span class="value-display" data-value-for="w-channel"></span></span>
+          <input type="range" id="w-channel" min="0" max="1" step="0.05" />
+        </label>
+        <label class="field slider-field">
+          <span>Length-fit <span class="value-display" data-value-for="w-length-fit"></span></span>
+          <input type="range" id="w-length-fit" min="0" max="1" step="0.05" />
+        </label>
+
+        <h4 class="subsection">Length-fit sweet spot (Gaussian)</h4>
+        <div class="field-row">
+          <label class="field">
+            <span>Center (sec)</span>
+            <input type="number" id="sweet-center" min="0" />
+          </label>
+          <label class="field">
+            <span>Width (sec)</span>
+            <input type="number" id="sweet-width" min="60" />
+          </label>
+        </div>
+
+        <button class="secondary" id="reset-defaults">Reset filters + weights to defaults</button>
+      </div>
+    </section>
+  </div>
+</aside>
 
 <script type="module" src="/js/main.js"></script>
 </body>
