@@ -1,5 +1,5 @@
-// QueryCast entry point. Stage 3 wires up the feed view on top of Stage 2's
-// auth chassis: refresh subscriptions, fetch RSS, render placeholder list.
+// QueryCast entry point. Boots IDB, drives auth + feed rendering, and
+// hosts the modal player + per-video action toast.
 
 import { openDb, seedDefaults, getActiveProfile, getCredentials } from './storage.js';
 import { renderSetupScreen } from './setup-screen.js';
@@ -13,8 +13,18 @@ import {
 import { refreshFeed, getRenderableFeed } from './feed.js';
 import { getDailyUsage, getQuotaCap } from './quota.js';
 import { scoreBreakdown } from './scoring.js';
+import { openPlayer, closePlayer, bindModalChrome, loadIframeApi } from './player.js';
+import {
+  markWatched, unmarkWatched,
+  saveVideo, unsaveVideo,
+  markNotInterested, unmarkNotInterested,
+} from './video-actions.js';
 
 const { invoke } = window.__TAURI__.core;
+
+// Index for current feed lookups (used by action handlers + modal opens
+// to find a video object by id without a second IDB round-trip).
+const feedIndex = new Map();
 
 bootApp();
 
@@ -69,6 +79,11 @@ async function renderMainApp(db) {
   document.getElementById('sign-in-btn')?.addEventListener('click', handleSignIn);
   document.getElementById('sign-out-btn')?.addEventListener('click', handleSignOut);
   document.getElementById('refresh-btn')?.addEventListener('click', handleRefresh);
+
+  bindModalChrome();
+  bindToast();
+  // Warm the IFrame API in the background so the first modal open is snappy.
+  loadIframeApi().catch((err) => console.warn('IFrame API preload failed', err));
 }
 
 async function handleSignIn() {
@@ -167,6 +182,7 @@ async function renderCachedFeed() {
     empty.hidden = false;
     featuredRow.innerHTML = '';
     grid.innerHTML = '';
+    feedIndex.clear();
     return;
   }
 
@@ -176,6 +192,12 @@ async function renderCachedFeed() {
   const top = feed.slice(0, 3);
   const rest = feed.slice(3, 100);
 
+  feedIndex.clear();
+  [...top, ...rest].forEach((v, idx) => {
+    v._rank = idx + 1;
+    feedIndex.set(v.videoId, v);
+  });
+
   featuredLabel.hidden = false;
   featuredRow.innerHTML = top.map((v, i) => videoCardHTML(v, i + 1, profile)).join('');
 
@@ -184,11 +206,22 @@ async function renderCachedFeed() {
 
   document.querySelectorAll('.video-card').forEach((el) => {
     el.addEventListener('click', (event) => {
-      // Ignore clicks that originated inside the hover info card so users
-      // can highlight description text without the modal/redirect firing.
-      if (event.target.closest('.info-card')) return;
+      // Action buttons + their containing actions row handle their own
+      // clicks; nothing else inside the info card should trigger playback.
+      if (event.target.closest('.action-btn')) return;
+      if (event.target.closest('.info-card .desc, .info-card .score-breakdown')) return;
       const id = el.dataset.videoId;
-      if (id) invoke('open_url', { url: `https://www.youtube.com/watch?v=${id}` });
+      const v = feedIndex.get(id);
+      if (v) handleCardOpen(v);
+    });
+  });
+
+  document.querySelectorAll('.action-btn').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const action = btn.dataset.action;
+      const id = btn.dataset.videoId;
+      handleAction(action, id);
     });
   });
 }
@@ -215,9 +248,17 @@ function videoCardHTML(v, rank, profile) {
   const descHtml = desc
     ? `<div class="desc">${escapeHtml(desc)}</div>`
     : `<div class="desc empty">No description.</div>`;
+  const idAttr = escapeAttr(v.videoId);
+  const actionsHtml = `
+    <div class="actions">
+      <button class="action-btn watch" data-action="watch" data-video-id="${idAttr}" title="Mark watched">✓ Watched</button>
+      <button class="action-btn save" data-action="save" data-video-id="${idAttr}" title="Save for later">★ Save</button>
+      <button class="action-btn skip" data-action="skip" data-video-id="${idAttr}" title="Not interested">✕ Hide</button>
+    </div>
+  `;
 
   return `
-    <div class="video-card${featured ? ' featured' : ''}" data-video-id="${escapeAttr(v.videoId)}">
+    <div class="video-card${featured ? ' featured' : ''}" data-video-id="${idAttr}">
       <div class="thumb-wrap">
         <img class="thumb" src="${escapeAttr(v.thumbnailUrl)}" loading="lazy" alt="">
         <span class="rank-badge">#${rank}</span>
@@ -235,9 +276,94 @@ function videoCardHTML(v, rank, profile) {
           ${statBadges.join(' ')}
         </div>
       </div>
-      ${breakdownHtml ? `<div class="info-card">${descHtml}<div class="score-breakdown">${breakdownHtml}</div></div>` : ''}
+      <div class="info-card">
+        ${descHtml}
+        ${breakdownHtml ? `<div class="score-breakdown">${breakdownHtml}</div>` : ''}
+        ${actionsHtml}
+      </div>
     </div>
   `;
+}
+
+async function handleCardOpen(video) {
+  try {
+    await openPlayer(video, video._rank || 0, async (videoId) => {
+      // Auto-watched at 30s — show toast with undo, refresh the feed in
+      // the background so the video drops out (it's now in `watched`).
+      await renderCachedFeed();
+      showToast('Auto-marked watched', async () => {
+        await unmarkWatched(videoId);
+        await renderCachedFeed();
+      });
+    });
+  } catch (err) {
+    console.error('Failed to open player', err);
+    // Fall back to opening on YouTube directly if the IFrame API failed.
+    invoke('open_url', { url: `https://www.youtube.com/watch?v=${video.videoId}` });
+  }
+}
+
+async function handleAction(action, videoId) {
+  if (!videoId) return;
+  try {
+    if (action === 'watch') {
+      await markWatched(videoId);
+      await renderCachedFeed();
+      showToast('Marked watched', async () => {
+        await unmarkWatched(videoId);
+        await renderCachedFeed();
+      });
+    } else if (action === 'save') {
+      await saveVideo(videoId);
+      // Saved doesn't change the main feed (it's a flag, not a filter),
+      // but we still refresh so any future Saved view stays in sync.
+      showToast('Saved for later', async () => {
+        await unsaveVideo(videoId);
+      });
+    } else if (action === 'skip') {
+      await markNotInterested(videoId);
+      await renderCachedFeed();
+      showToast('Hidden', async () => {
+        await unmarkNotInterested(videoId);
+        await renderCachedFeed();
+      });
+    }
+  } catch (err) {
+    console.error(`Action ${action} failed`, err);
+  }
+}
+
+let toastTimer = null;
+let toastUndoFn = null;
+
+function bindToast() {
+  const undoBtn = document.getElementById('toast-undo');
+  undoBtn.addEventListener('click', () => {
+    const fn = toastUndoFn;
+    hideToast();
+    if (fn) fn();
+  });
+}
+
+function showToast(message, undoFn) {
+  const toast = document.getElementById('action-toast');
+  const msg = document.getElementById('toast-msg');
+  msg.textContent = message;
+  toastUndoFn = undoFn || null;
+  toast.hidden = false;
+  // Force reflow so the .show transition kicks in even on rapid retoasts.
+  void toast.offsetWidth;
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 5000);
+}
+
+function hideToast() {
+  const toast = document.getElementById('action-toast');
+  toast.classList.remove('show');
+  toastUndoFn = null;
+  if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+  setTimeout(() => { toast.hidden = true; }, 200);
 }
 
 function formatBreakdown(v, profile) {

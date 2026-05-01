@@ -37,7 +37,9 @@ querycast/
 │   ├── concurrency.js      # promise queue, RSS_CONCURRENCY=3
 │   ├── feed.js             # refreshFeed + getRenderableFeed (filter + score + sort)
 │   ├── quota.js            # daily usage tracker, 200u/day cap
-│   └── scoring.js          # pure filter + score functions (Stage 5, ADR-007)
+│   ├── scoring.js          # pure filter + score functions (Stage 5, ADR-007)
+│   ├── player.js           # YouTube IFrame Player modal (Stage 6b)
+│   └── video-actions.js    # mark watched / save / not-interested + undo helpers
 └── src-tauri/
     ├── Cargo.toml          # Rust dependencies
     ├── tauri.conf.json     # Bundle config, window settings, icon list
@@ -98,8 +100,8 @@ Per the v3 plan (Tauri pivot):
 - **Stage 4 (✅ done):** Metadata enrichment + tombstones + client quota cap (200 units/day)
 - **Stage 5 (✅ done):** Filter + ranking engine (`js/scoring.js` — hard filters, channel-weight resolution, Gaussian length-fit, pin boost). `getRenderableFeed()` sorts by score; UI shows score pill + PINNED badge.
 - **Stage 6 (in progress):** UI per ADR-006 + per-video actions + Saved view + profile switcher. Sliced into 6a/6b/6c.
-  - **6a (✅ done):** Hybrid layout (featured-row 2fr 1fr 1fr + 3-col grid), rank badges (#1 purple, rest blue), hover info card with score breakdown (per-signal contributions; negative channel in orange). Narrow viewport (<900px) collapses to inbox rows. No behavior changes — click still opens YouTube.
-  - **6b:** Modal IFrame Player + per-video actions + 5s undo banner.
+  - **6a (✅ done):** Hybrid layout (featured-row 2fr 1fr 1fr + 3-col grid), rank badges (#1 purple, rest blue), hover info card with score breakdown (per-signal contributions; negative channel in orange). Narrow viewport (<900px) collapses to inbox rows.
+  - **6b (✅ done):** Modal IFrame Player (`js/player.js` — loads `https://www.youtube.com/iframe_api`, mounts `YT.Player`, focus trap, Esc/click-outside/✕ close, body scroll lock). Auto-marks watched after 30s of accumulated PLAYING state. `onError` 101/150 surfaces an "Open on youtube.com" fallback that defers to `open_url`. Per-video actions in info card (`js/video-actions.js` — watch/save/skip + undo helpers) with a 5s undo toast. Card click now opens the modal instead of redirecting.
   - **6c:** Saved view + profile switcher.
 - **Stage 7:** Settings UI (profiles, channel groups, hidden videos) + Drive backup
 - **Stage 8:** Soft launch + kill criterion check
@@ -118,6 +120,8 @@ Per the v3 plan (Tauri pivot):
 - **WebView2 not pre-installed on older Windows 10.** Tauri's `webviewInstallMode: downloadBootstrapper` handles this — first-run downloads ~120MB. Document this in README.
 - **Some videos disable embedding.** IFrame Player throws `onError` 101/150 — show "Open on youtube.com" fallback.
 - **DevTools in production WebView2.** Disabled by default in release builds. Use `cargo tauri dev` for inspection.
+- **YouTube IFrame API is loaded dynamically (Stage 6b).** First call to `loadIframeApi()` injects `<script src="https://www.youtube.com/iframe_api">`; subsequent calls await the same promise. CSP is null in `tauri.conf.json` so this isn't blocked. If the script fails (offline), the promise rejects and `apiReadyPromise` is reset so a future open can retry.
+- **Auto-watched timer is *accumulated* PLAYING time, not wall-clock.** Pause/seek cycles preserve the count; the 30s threshold fires once per modal open.
 
 ## Sunset criteria
 
