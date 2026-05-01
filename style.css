@@ -175,14 +175,47 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
 
 .feed-item:hover { background: var(--bg-elev); }
 
-.feed-item .thumb {
+.thumb-wrap {
+  position: relative;
   width: 168px;
   height: 94px;
+  flex-shrink: 0;
+}
+
+.feed-item .thumb {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 4px;
-  flex-shrink: 0;
   background: var(--bg-elev2);
+  display: block;
 }
+
+.duration-badge {
+  position: absolute;
+  bottom: 0.3rem;
+  right: 0.3rem;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-weight: 600;
+  font-family: var(--mono);
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.badge.short { background: #d2992233; color: var(--orange); border: 1px solid var(--orange); }
+.badge.live { background: #f8514933; color: var(--red); border: 1px solid var(--red); }
+.badge.upcoming { background: #1f6feb33; color: var(--blue); border: 1px solid var(--blue); }
 
 .feed-item .info {
   flex: 1;

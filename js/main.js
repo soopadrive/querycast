@@ -11,6 +11,7 @@ import {
   AuthRequiredError,
 } from './auth.js';
 import { refreshFeed, getRenderableFeed } from './feed.js';
+import { getDailyUsage, getQuotaCap } from './quota.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -41,6 +42,8 @@ async function renderMainApp(db) {
 
   const profile = await getActiveProfile();
   setStatus('profile', profile ? `Active: ${profile.name}` : 'Not seeded', profile ? 'ok' : 'fail');
+
+  await updateQuotaStatus();
 
   const signedIn = await isSignedIn();
   if (signedIn) {
@@ -105,6 +108,7 @@ async function handleRefresh() {
   const btn = document.getElementById('refresh-btn');
   const status = document.getElementById('feed-status');
   btn.disabled = true;
+  status.className = 'note';
   status.textContent = 'Starting refresh…';
 
   try {
@@ -112,19 +116,39 @@ async function handleRefresh() {
       if (progress.phase === 'subs') {
         status.textContent = progress.message || 'Loading subscriptions…';
       } else if (progress.phase === 'rss' && progress.total) {
-        status.textContent = `Fetched ${progress.completed}/${progress.total} channels…`;
+        status.textContent = `Fetched RSS for ${progress.completed}/${progress.total} channels…`;
+      } else if (progress.phase === 'enrich') {
+        if (progress.total) {
+          status.textContent = `Enriching ${progress.completed || 0}/${progress.total} videos…`;
+        } else {
+          status.textContent = progress.message || 'Enriching metadata…';
+        }
       } else if (progress.phase === 'done') {
         status.textContent = progress.message || 'Done.';
+        if (progress.quotaExhausted) {
+          status.className = 'note error';
+        }
       }
     });
-    status.textContent = `Refreshed ${result.channelsOk} of ${result.subs} channels${result.channelsFailed ? ` (${result.channelsFailed} failed)` : ''}.`;
+    if (!status.textContent || status.textContent === 'Done.') {
+      status.textContent = `Refreshed ${result.channelsOk}/${result.subs} channels · enriched ${result.enriched}${result.tombstoned ? ` · ${result.tombstoned} unavailable` : ''}.`;
+    }
     await renderCachedFeed();
   } catch (err) {
     status.textContent = `Refresh failed: ${err.message}`;
     status.className = 'note error';
   } finally {
+    await updateQuotaStatus();
     btn.disabled = false;
   }
+}
+
+async function updateQuotaStatus() {
+  const used = await getDailyUsage();
+  const cap = getQuotaCap();
+  const pct = (used / cap) * 100;
+  const kind = pct >= 90 ? 'fail' : pct >= 50 ? 'info' : 'ok';
+  setStatus('quota', `${used} / ${cap} units`, kind);
 }
 
 async function renderCachedFeed() {
@@ -150,15 +174,47 @@ async function renderCachedFeed() {
 
 function renderItem(v) {
   const date = formatRelativeDate(v.publishedAt);
+  const durationLabel = v.duration ? formatDuration(v.duration) : '';
+  const viewLabel = v.viewCount ? formatViewCount(v.viewCount) : '';
+  const isLive = v.liveStatus === 'live' || v.liveStatus === 'upcoming';
+
+  const badges = [];
+  if (v.isShort) badges.push(`<span class="badge short">SHORT</span>`);
+  if (v.liveStatus === 'live') badges.push(`<span class="badge live">LIVE</span>`);
+  else if (v.liveStatus === 'upcoming') badges.push(`<span class="badge upcoming">UPCOMING</span>`);
+
+  const metaParts = [escapeHtml(v.channelTitle)];
+  if (viewLabel) metaParts.push(viewLabel);
+  metaParts.push(date);
+
   return `
     <li class="feed-item" data-video-id="${escapeAttr(v.videoId)}">
-      <img class="thumb" src="${escapeAttr(v.thumbnailUrl)}" loading="lazy" alt="">
+      <div class="thumb-wrap">
+        <img class="thumb" src="${escapeAttr(v.thumbnailUrl)}" loading="lazy" alt="">
+        ${durationLabel ? `<span class="duration-badge">${durationLabel}</span>` : ''}
+      </div>
       <div class="info">
         <div class="title">${escapeHtml(v.title)}</div>
-        <div class="meta">${escapeHtml(v.channelTitle)} · ${date}</div>
+        <div class="meta">${metaParts.join(' · ')} ${badges.join(' ')}</div>
       </div>
     </li>
   `;
+}
+
+function formatDuration(seconds) {
+  if (!seconds || seconds < 0) return '';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function formatViewCount(n) {
+  if (!n || n < 0) return '';
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M views`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K views`;
+  return `${n} views`;
 }
 
 function formatRelativeDate(iso) {
