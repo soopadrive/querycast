@@ -96,6 +96,7 @@ async function renderMainApp(db) {
       const profile = await getActiveProfile();
       setStatus('profile', profile ? `Active: ${profile.name}` : 'Not seeded', profile ? 'ok' : 'fail');
     },
+    getToken: () => getValidAccessToken(),
   });
   // "Manage profiles…" entry in the profile dropdown jumps into the
   // drawer focused on the profile section.

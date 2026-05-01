@@ -15,7 +15,7 @@
 <div class="app-shell">
   <header>
     <h1 class="logo">◆ QueryCast</h1>
-    <span class="status">v0.1 · Stage 7c</span>
+    <span class="status">v0.1 · Stage 7d</span>
   </header>
 
   <main>
@@ -284,6 +284,22 @@
           <h4 class="subsection">Already watched <span class="count" id="hidden-watch-count">0</span></h4>
           <ul class="hidden-list" id="hidden-watch-list"></ul>
         </div>
+      </div>
+    </section>
+
+    <section class="drawer-section" id="section-backup">
+      <h3 class="section-toggle" aria-expanded="false" tabindex="0" role="button">
+        <span class="chevron" aria-hidden="true">▾</span>
+        Drive backup
+      </h3>
+      <div class="section-body" hidden>
+        <p class="backup-blurb">Stores your profiles + watched / saved / hidden lists in a hidden per-app folder on your Google Drive. Videos and quota state are not backed up.</p>
+        <div class="backup-status" id="backup-status">Checking Drive…</div>
+        <div class="action-row">
+          <button class="primary" id="backup-now">Backup now</button>
+          <button class="secondary" id="restore-now">Restore from Drive…</button>
+        </div>
+        <p class="backup-message" id="backup-message"></p>
       </div>
     </section>
   </div>

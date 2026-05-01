@@ -1311,3 +1311,28 @@ button.primary:disabled {
   padding: 0.3rem 0.55rem;
   flex-shrink: 0;
 }
+
+/* === Drive backup section (Stage 7d) === */
+.backup-blurb {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: 0;
+}
+.backup-status {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.82rem;
+  font-family: var(--mono);
+  color: var(--text);
+}
+.backup-message {
+  font-size: 0.82rem;
+  margin: 0;
+  min-height: 1.2em;
+  color: var(--text-dim);
+}
+.backup-message.ok { color: var(--green); }
+.backup-message.error { color: var(--red); }

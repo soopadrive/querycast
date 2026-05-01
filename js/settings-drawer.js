@@ -8,12 +8,15 @@
 
 import { STORES, DEFAULT_PROFILE } from './defaults.js';
 import { getAll, put, del } from './storage.js';
+import { backupNow, restoreLatest, getBackupInfo } from './drive-backup.js';
 
 let editingProfileId = null;
 let onChangeCallback = null;
+let getTokenCallback = null;
 
-export function bindSettingsDrawer({ onChange } = {}) {
+export function bindSettingsDrawer({ onChange, getToken } = {}) {
   onChangeCallback = onChange || null;
+  getTokenCallback = getToken || null;
 
   document.getElementById('settings-btn')?.addEventListener('click', () => openDrawer());
   document.getElementById('settings-close')?.addEventListener('click', closeDrawer);
@@ -136,6 +139,20 @@ export function bindSettingsDrawer({ onChange } = {}) {
   // Hidden videos section (Stage 7c)
   document.getElementById('hidden-skip-list')?.addEventListener('click', handleHiddenAction);
   document.getElementById('hidden-watch-list')?.addEventListener('click', handleHiddenAction);
+
+  // Drive backup section (Stage 7d)
+  document.getElementById('backup-now')?.addEventListener('click', handleBackupNow);
+  document.getElementById('restore-now')?.addEventListener('click', handleRestore);
+  // Auto-fetch backup info when the section is opened.
+  document.getElementById('section-backup')?.querySelector('.section-toggle')
+    ?.addEventListener('click', () => {
+      // Defer so the click toggles aria-expanded first.
+      setTimeout(() => {
+        const expanded = document.querySelector('#section-backup .section-toggle')
+          ?.getAttribute('aria-expanded') === 'true';
+        if (expanded) refreshBackupStatus();
+      }, 10);
+    });
 }
 
 export async function openDrawer(scrollToSection) {
@@ -497,6 +514,96 @@ async function handleHiddenAction(e) {
 function cssEscape(s) {
   // Minimal CSS attribute selector escape for our group ids.
   return String(s).replace(/"/g, '\\"');
+}
+
+// === Drive backup section (Stage 7d) ===
+
+async function refreshBackupStatus() {
+  const statusEl = document.getElementById('backup-status');
+  if (!statusEl) return;
+  if (!getTokenCallback) {
+    statusEl.textContent = 'Sign in required to use Drive backup.';
+    setBackupButtonsEnabled(false);
+    return;
+  }
+  statusEl.textContent = 'Checking Drive…';
+  try {
+    const token = await getTokenCallback();
+    const info = await getBackupInfo(token);
+    if (info.exists) {
+      const when = new Date(info.modifiedTime).toLocaleString();
+      const size = info.size != null ? ` · ${formatBytes(info.size)}` : '';
+      statusEl.textContent = `Last backup: ${when}${size}`;
+      document.getElementById('restore-now').disabled = false;
+    } else {
+      statusEl.textContent = 'No backup yet — click "Backup now" to create one.';
+      document.getElementById('restore-now').disabled = true;
+    }
+    document.getElementById('backup-now').disabled = false;
+  } catch (err) {
+    statusEl.textContent = `Drive check failed: ${err.message}`;
+    setBackupButtonsEnabled(false);
+  }
+}
+
+async function handleBackupNow() {
+  if (!getTokenCallback) return;
+  const msgEl = document.getElementById('backup-message');
+  setBackupButtonsEnabled(false);
+  msgEl.textContent = 'Backing up…';
+  msgEl.className = 'backup-message';
+  try {
+    const token = await getTokenCallback();
+    const result = await backupNow(token);
+    const total = Object.values(result.counts).reduce((a, b) => a + b, 0);
+    msgEl.textContent = `Backed up · ${total} rows across ${Object.keys(result.counts).length} stores`;
+    msgEl.className = 'backup-message ok';
+    await refreshBackupStatus();
+  } catch (err) {
+    msgEl.textContent = `Backup failed: ${err.message}`;
+    msgEl.className = 'backup-message error';
+  } finally {
+    setBackupButtonsEnabled(true);
+  }
+}
+
+async function handleRestore() {
+  if (!getTokenCallback) return;
+  if (!confirm('Restore from Drive? This will overwrite current profiles, watched, saved, and hidden videos with whatever is in the latest backup.')) return;
+  const msgEl = document.getElementById('backup-message');
+  setBackupButtonsEnabled(false);
+  msgEl.textContent = 'Restoring…';
+  msgEl.className = 'backup-message';
+  try {
+    const token = await getTokenCallback();
+    const result = await restoreLatest(token);
+    const total = Object.values(result.counts).reduce((a, b) => a + b, 0);
+    msgEl.textContent = `Restored · ${total} rows · backup from ${new Date(result.exportedAt).toLocaleString()}`;
+    msgEl.className = 'backup-message ok';
+    // Re-render the drawer + feed so the restored data shows.
+    editingProfileId = null;
+    await renderAll();
+    notify();
+  } catch (err) {
+    msgEl.textContent = `Restore failed: ${err.message}`;
+    msgEl.className = 'backup-message error';
+  } finally {
+    setBackupButtonsEnabled(true);
+  }
+}
+
+function setBackupButtonsEnabled(enabled) {
+  const ids = ['backup-now', 'restore-now'];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !enabled;
+  }
+}
+
+function formatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function bindKeywordEditor(listId, inputId, ruleKey) {

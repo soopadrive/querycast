@@ -41,14 +41,16 @@ querycast/
 │   ├── scoring.js          # pure filter + score functions (Stage 5, ADR-007)
 │   ├── player.js           # YouTube IFrame Player modal (Stage 6b)
 │   ├── video-actions.js    # mark watched / save / not-interested + undo helpers
-│   ├── settings-drawer.js  # Settings drawer (Stage 7b) — profile CRUD + filters + weights
+│   ├── settings-drawer.js  # Settings drawer (Stage 7b–d) — profile CRUD + filters + weights + channels + groups + hidden + Drive backup
+│   ├── drive-backup.js     # Drive appdata JSON backup (Stage 7d)
 │   └── preview/            # Static preview stubs (Stage 7a) — same exports as production peers
 │       ├── mock-data.js          # deterministic 15-video seed, default profile w/ pin + suppressed channel
 │       ├── storage-stub.js       # in-memory IDB replacement
 │       ├── auth-stub.js          # always-signed-in
 │       ├── player-stub.js        # mock modal player; auto-watched fires at 5s
 │       ├── youtube-api-stub.js   # no-op (preview never refreshes)
-│       └── rss-fetcher-stub.js   # no-op
+│       ├── rss-fetcher-stub.js   # no-op
+│       └── drive-backup-stub.js  # sessionStorage-backed fake Drive (Stage 7d)
 └── src-tauri/
     ├── Cargo.toml          # Rust dependencies
     ├── tauri.conf.json     # Bundle config, window settings, icon list
@@ -128,12 +130,12 @@ Per the v3 plan (Tauri pivot):
   - **6a:** Hybrid layout (featured-row 2fr 1fr 1fr + 3-col grid), rank badges (#1 purple, rest blue), hover info card with score breakdown (per-signal contributions; negative channel in orange). Narrow viewport (<900px) collapses to inbox rows.
   - **6b:** Modal IFrame Player (`js/player.js` — loads `https://www.youtube.com/iframe_api`, mounts `YT.Player`, focus trap, Esc/click-outside/✕ close, body scroll lock). Auto-marks watched after 30s of accumulated PLAYING state. `onError` 101/150 surfaces an "Open on youtube.com" fallback that defers to `open_url`. Per-video actions in info card (`js/video-actions.js` — watch/save/skip + undo helpers) with a 5s undo toast. Card click opens the modal instead of redirecting.
   - **6c:** Toolbar with Today / Saved nav tabs and a profile dropdown. `getSavedFeed()` joins `STORES.saved` against the videos cache, sorts by savedAt desc, drops the featured-row hierarchy in Saved view. Profile dropdown lists profiles from IDB with active marked; "Manage profiles…" is the Stage 7 hook.
-- **Stage 7 (in progress):** Settings UI + Drive backup, sliced into 7a/7b/7c/7d. (Plus a "See less" interlude after 7c — see below.)
+- **Stage 7 (✅ done):** Settings UI + Drive backup, sliced into 7a/7b/7c/7d. (Plus a "See less" interlude after 7c — see below.)
   - **7a (✅ done):** Static preview path — `preview.html` + `js/preview/*` stubs (storage, auth, player, youtube-api, rss-fetcher) + deterministic `mock-data.js`. Uses an HTML import map to redirect production module URLs to stubs at load time, so `main.js` runs unmodified. Includes a viewport toggle (1280/1000/880/720) for testing the 900px narrow-layout breakpoint without resizing the window.
   - **7b (✅ done):** Settings drawer chassis (`js/settings-drawer.js` + drawer markup + CSS slide-in panel) hosting three collapsible sections in v1: Profile (rename, add, duplicate, delete, set-active), Discovery filters (block/require keyword chip editors, duration/age/views numeric inputs, hide-shorts/live/podcasts toggles), Scoring weights (4 sliders 0–1 with live value display, sweet-spot center/width inputs, Reset to defaults). Drawer trigger: ⚙ button in toolbar + the now-enabled "Manage profiles…" entry (jumps directly to the profile section). Every input writes to IDB on change, then notifies main.js to re-render the feed + profile dropdown.
   - **7c (✅ done):** Three more drawer sections: **Channels** (alphabetical list of subscribed channels with pin-toggle ★ and per-channel weight override input from -2 to +2; live filter search), **Channel groups** (collapsible group cards each with name, weight slider -2..+2, member checkboxes against the full channel list; +New / Delete buttons), **Hidden videos** (separate lists for "Hidden by you" / "Already watched" with per-row Un-hide / Un-mark buttons, count pills in section headers). Channel list source: `STORES.subscriptions` first, falls back to deriving from `STORES.videos`. Override removal: leave the weight input blank to fall back to group sums.
   - **"See less from this channel" interlude (✅ done, between 7c and 7d):** The 5s undo toast on `✕ Hide` now carries an optional secondary purple button reading "See less from \[channel]". Click it → subtract 0.5 from the channel's *resolved* weight (`resolveChannelWeight` from scoring.js), clamp to [-2, +2], write to `profile.channelOverrides[channelId]`. The undo callback reverts both the hide AND the weight change atomically (capturing the prior override state in a closure). One-shot per hide — secondary button auto-hides after the first click so weight can't compound on the same hide.
-  - **7d:** Drive `appdata` backup — JSON export/restore of all profile + state stores.
+  - **7d (✅ done):** Drive `appdata` backup (`js/drive-backup.js`). Single file `querycast-backup.json` in the per-app `appDataFolder` — created on first backup, replaced via Drive multipart `PATCH` on subsequent backups. Backs up `profiles + watched + saved + not_interested` (no videos, subscriptions, quota, or credentials). Restore wipes target stores then writes from the backup; refuses on schema mismatch. UI is the seventh drawer section: blurb + last-backup status row + Backup-now / Restore buttons + ok/error message. Preview path uses `js/preview/drive-backup-stub.js` (sessionStorage-backed) so the button states + status messages can be exercised without real Drive auth.
 
 - **Stage 8 (NEW — Polish + branding):** Light/dark theme toggle (CSS-variable-driven, persisted to IDB), refined branding (logo, icon, color palette consistency), accessibility pass (contrast ratios, ARIA labels, keyboard nav across the drawer + modal + toolbar), copy review across all empty states + status messages, transitions/animations consistency. Possibly an onboarding flow for first-run after BYO setup.
 - **Stage 9 (was Stage 8) — Soft launch + kill criterion check:** invite testers, daily journal, kill criterion check.
