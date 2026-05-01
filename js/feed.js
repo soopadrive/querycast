@@ -237,3 +237,30 @@ export async function getRenderableFeed() {
     return new Date(b.publishedAt) - new Date(a.publishedAt);
   });
 }
+
+// Saved view (Stage 6c): videos the user explicitly hit the Save button
+// on. Sorted by savedAt desc — chronological by save action, not score.
+// Watched / not-interested don't filter Saved (an item is on the Saved
+// list because the user put it there; let them see it).
+export async function getSavedFeed() {
+  const [savedRows, videos, profile] = await Promise.all([
+    getAll(STORES.saved),
+    getAll(STORES.videos),
+    getActiveProfile(),
+  ]);
+
+  const videoMap = new Map(videos.map((v) => [v.videoId, v]));
+  const sorted = savedRows.slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+
+  const result = [];
+  for (const s of sorted) {
+    const v = videoMap.get(s.videoId);
+    if (!v) continue; // metadata gone; skip silently
+    if (profile) {
+      v._score = scoreVideo(v, profile);
+      v._pinned = isChannelPinned(v.channelId, profile);
+    }
+    result.push(v);
+  }
+  return result;
+}

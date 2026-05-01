@@ -1,7 +1,7 @@
 // QueryCast entry point. Boots IDB, drives auth + feed rendering, and
 // hosts the modal player + per-video action toast.
 
-import { openDb, seedDefaults, getActiveProfile, getCredentials } from './storage.js';
+import { openDb, seedDefaults, getActiveProfile, getCredentials, getAll, put } from './storage.js';
 import { renderSetupScreen } from './setup-screen.js';
 import {
   signIn,
@@ -10,21 +10,25 @@ import {
   getValidAccessToken,
   AuthRequiredError,
 } from './auth.js';
-import { refreshFeed, getRenderableFeed } from './feed.js';
+import { refreshFeed, getRenderableFeed, getSavedFeed } from './feed.js';
 import { getDailyUsage, getQuotaCap } from './quota.js';
 import { scoreBreakdown } from './scoring.js';
-import { openPlayer, closePlayer, bindModalChrome, loadIframeApi } from './player.js';
+import { openPlayer, bindModalChrome, loadIframeApi } from './player.js';
 import {
   markWatched, unmarkWatched,
   saveVideo, unsaveVideo,
   markNotInterested, unmarkNotInterested,
 } from './video-actions.js';
+import { STORES } from './defaults.js';
 
 const { invoke } = window.__TAURI__.core;
 
 // Index for current feed lookups (used by action handlers + modal opens
 // to find a video object by id without a second IDB round-trip).
 const feedIndex = new Map();
+
+// Active feed view — 'today' (filtered + scored) or 'saved' (Save list).
+let currentView = 'today';
 
 bootApp();
 
@@ -82,6 +86,9 @@ async function renderMainApp(db) {
 
   bindModalChrome();
   bindToast();
+  bindFeedNav();
+  bindProfileMenu();
+  await renderProfileMenu();
   // Warm the IFrame API in the background so the first modal open is snappy.
   loadIframeApi().catch((err) => console.warn('IFrame API preload failed', err));
 }
@@ -169,13 +176,20 @@ async function updateQuotaStatus() {
 }
 
 async function renderCachedFeed() {
-  const [profile, feed] = await Promise.all([getActiveProfile(), getRenderableFeed()]);
+  const [profile, feed] = await Promise.all([
+    getActiveProfile(),
+    currentView === 'saved' ? getSavedFeed() : getRenderableFeed(),
+  ]);
   const board = document.getElementById('feed-board');
   const empty = document.getElementById('feed-empty');
   const featuredRow = document.getElementById('featured-row');
   const grid = document.getElementById('grid');
   const featuredLabel = document.getElementById('featured-label');
   const gridLabel = document.getElementById('grid-label');
+
+  empty.innerHTML = currentView === 'saved'
+    ? 'No saved videos yet. Hit <strong>★ Save</strong> in the info card to add one.'
+    : 'No videos cached yet. Click <strong>Refresh</strong> to fetch your subscriptions.';
 
   if (feed.length === 0) {
     board.hidden = true;
@@ -189,20 +203,30 @@ async function renderCachedFeed() {
   empty.hidden = true;
   board.hidden = false;
 
-  const top = feed.slice(0, 3);
-  const rest = feed.slice(3, 100);
-
   feedIndex.clear();
-  [...top, ...rest].forEach((v, idx) => {
+  feed.forEach((v, idx) => {
     v._rank = idx + 1;
     feedIndex.set(v.videoId, v);
   });
 
-  featuredLabel.hidden = false;
-  featuredRow.innerHTML = top.map((v, i) => videoCardHTML(v, i + 1, profile)).join('');
-
-  gridLabel.hidden = rest.length === 0;
-  grid.innerHTML = rest.map((v, i) => videoCardHTML(v, i + 4, profile)).join('');
+  if (currentView === 'saved') {
+    // Saved view: drop the featured-row hierarchy (rank #1 = "most
+    // recently saved" doesn't deserve a giant card). Single grid label.
+    featuredLabel.hidden = true;
+    featuredRow.innerHTML = '';
+    gridLabel.textContent = 'Saved videos';
+    gridLabel.hidden = false;
+    grid.innerHTML = feed.map((v, i) => videoCardHTML(v, i + 1, profile)).join('');
+  } else {
+    const top = feed.slice(0, 3);
+    const rest = feed.slice(3, 100);
+    featuredLabel.hidden = false;
+    featuredLabel.textContent = 'Top picks · ranked by score';
+    featuredRow.innerHTML = top.map((v, i) => videoCardHTML(v, i + 1, profile)).join('');
+    gridLabel.hidden = rest.length === 0;
+    gridLabel.textContent = 'More from your subscriptions';
+    grid.innerHTML = rest.map((v, i) => videoCardHTML(v, i + 4, profile)).join('');
+  }
 
   document.querySelectorAll('.video-card').forEach((el) => {
     el.addEventListener('click', (event) => {
@@ -315,10 +339,12 @@ async function handleAction(action, videoId) {
       });
     } else if (action === 'save') {
       await saveVideo(videoId);
-      // Saved doesn't change the main feed (it's a flag, not a filter),
-      // but we still refresh so any future Saved view stays in sync.
+      // Save doesn't drop the video from the Today feed — it's a flag,
+      // not a filter. But undoing a save in the Saved view should drop
+      // it, so the undo callback re-renders only when relevant.
       showToast('Saved for later', async () => {
         await unsaveVideo(videoId);
+        if (currentView === 'saved') await renderCachedFeed();
       });
     } else if (action === 'skip') {
       await markNotInterested(videoId);
@@ -364,6 +390,87 @@ function hideToast() {
   toastUndoFn = null;
   if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
   setTimeout(() => { toast.hidden = true; }, 200);
+}
+
+function bindFeedNav() {
+  document.querySelectorAll('.nav-tab').forEach((tab) => {
+    tab.addEventListener('click', async () => {
+      const view = tab.dataset.view;
+      if (!view || view === currentView) return;
+      currentView = view;
+      document.querySelectorAll('.nav-tab').forEach((t) => {
+        const active = t.dataset.view === view;
+        t.classList.toggle('active', active);
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      await renderCachedFeed();
+    });
+  });
+}
+
+function bindProfileMenu() {
+  const trigger = document.getElementById('profile-trigger');
+  const menu = document.getElementById('profile-menu');
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (menu.hidden) openProfileMenu();
+    else closeProfileMenu();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (menu.hidden) return;
+    if (!menu.contains(e.target) && e.target !== trigger) closeProfileMenu();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menu.hidden) closeProfileMenu();
+  });
+}
+
+function openProfileMenu() {
+  document.getElementById('profile-menu').hidden = false;
+  document.getElementById('profile-trigger').setAttribute('aria-expanded', 'true');
+}
+function closeProfileMenu() {
+  document.getElementById('profile-menu').hidden = true;
+  document.getElementById('profile-trigger').setAttribute('aria-expanded', 'false');
+}
+
+async function renderProfileMenu() {
+  const profiles = await getAll(STORES.profiles);
+  const active = profiles.find((p) => p.isActive) || profiles[0];
+  document.getElementById('profile-name').textContent = active?.name || 'Default';
+
+  const list = document.getElementById('profile-menu-list');
+  list.innerHTML = profiles
+    .map(
+      (p) => `
+      <button class="profile-menu-item${p.isActive ? ' active' : ''}" data-profile-id="${escapeAttr(p.profileId)}">
+        <span>${escapeHtml(p.name)}</span>
+      </button>
+    `
+    )
+    .join('');
+
+  list.querySelectorAll('.profile-menu-item').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await switchProfile(btn.dataset.profileId);
+    });
+  });
+}
+
+async function switchProfile(profileId) {
+  if (!profileId) return;
+  const profiles = await getAll(STORES.profiles);
+  for (const p of profiles) {
+    const next = { ...p, isActive: p.profileId === profileId };
+    await put(STORES.profiles, next);
+  }
+  closeProfileMenu();
+  await renderProfileMenu();
+  setStatus('profile', `Active: ${profiles.find((p) => p.profileId === profileId)?.name || 'Default'}`, 'ok');
+  await renderCachedFeed();
 }
 
 function formatBreakdown(v, profile) {

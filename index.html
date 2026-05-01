@@ -15,7 +15,7 @@
 <div class="app-shell">
   <header>
     <h1 class="logo">◆ QueryCast</h1>
-    <span class="status">v0.1 · Stage 6b</span>
+    <span class="status">v0.1 · Stage 6c</span>
   </header>
 
   <main>
@@ -52,9 +52,27 @@
     <p class="note" id="auth-msg">Loading…</p>
 
     <section id="feed-section" hidden>
-      <div class="feed-header">
-        <h3>Your feed</h3>
+      <div class="feed-toolbar">
+        <nav class="feed-nav" role="tablist" aria-label="Feed view">
+          <button class="nav-tab active" data-view="today" role="tab" aria-selected="true">Today</button>
+          <button class="nav-tab" data-view="saved" role="tab" aria-selected="false">Saved</button>
+        </nav>
         <button class="secondary" id="refresh-btn">Refresh</button>
+        <div class="profile-dropdown">
+          <button class="profile-trigger" id="profile-trigger" aria-haspopup="menu" aria-expanded="false">
+            <span class="profile-label">Profile</span>
+            <span class="profile-name" id="profile-name">Default</span>
+            <span class="caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="profile-menu" id="profile-menu" role="menu" hidden>
+            <div class="profile-menu-section">Active profile</div>
+            <div class="profile-menu-list" id="profile-menu-list"></div>
+            <div class="profile-menu-divider"></div>
+            <button class="profile-menu-item disabled" disabled title="Coming in Stage 7">
+              Manage profiles…
+            </button>
+          </div>
+        </div>
       </div>
       <p id="feed-status" class="note"></p>
 

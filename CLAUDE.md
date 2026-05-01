@@ -99,10 +99,11 @@ Per the v3 plan (Tauri pivot):
 - **Stage 3 (✅ done):** Subscriptions + direct RSS fetch + first feed render (no proxy needed; WebView2 fetches RSS directly)
 - **Stage 4 (✅ done):** Metadata enrichment + tombstones + client quota cap (200 units/day)
 - **Stage 5 (✅ done):** Filter + ranking engine (`js/scoring.js` — hard filters, channel-weight resolution, Gaussian length-fit, pin boost). `getRenderableFeed()` sorts by score; UI shows score pill + PINNED badge.
-- **Stage 6 (in progress):** UI per ADR-006 + per-video actions + Saved view + profile switcher. Sliced into 6a/6b/6c.
-  - **6a (✅ done):** Hybrid layout (featured-row 2fr 1fr 1fr + 3-col grid), rank badges (#1 purple, rest blue), hover info card with score breakdown (per-signal contributions; negative channel in orange). Narrow viewport (<900px) collapses to inbox rows.
-  - **6b (✅ done):** Modal IFrame Player (`js/player.js` — loads `https://www.youtube.com/iframe_api`, mounts `YT.Player`, focus trap, Esc/click-outside/✕ close, body scroll lock). Auto-marks watched after 30s of accumulated PLAYING state. `onError` 101/150 surfaces an "Open on youtube.com" fallback that defers to `open_url`. Per-video actions in info card (`js/video-actions.js` — watch/save/skip + undo helpers) with a 5s undo toast. Card click now opens the modal instead of redirecting.
-  - **6c:** Saved view + profile switcher.
+- **Stage 6 (✅ done):** UI per ADR-006 + per-video actions + Saved view + profile switcher.
+  - **6a:** Hybrid layout (featured-row 2fr 1fr 1fr + 3-col grid), rank badges (#1 purple, rest blue), hover info card with score breakdown (per-signal contributions; negative channel in orange). Narrow viewport (<900px) collapses to inbox rows.
+  - **6b:** Modal IFrame Player (`js/player.js` — loads `https://www.youtube.com/iframe_api`, mounts `YT.Player`, focus trap, Esc/click-outside/✕ close, body scroll lock). Auto-marks watched after 30s of accumulated PLAYING state. `onError` 101/150 surfaces an "Open on youtube.com" fallback that defers to `open_url`. Per-video actions in info card (`js/video-actions.js` — watch/save/skip + undo helpers) with a 5s undo toast. Card click opens the modal instead of redirecting.
+  - **6c:** Toolbar with Today / Saved nav tabs and a profile dropdown. `getSavedFeed()` joins `STORES.saved` against the videos cache, sorts by savedAt desc, drops the featured-row hierarchy in Saved view. Profile dropdown lists profiles from IDB with active marked; "Manage profiles…" is the Stage 7 hook.
+- **Stage 7 (next):** Settings UI (profiles CRUD, channel groups, hidden videos panel) + Drive backup.
 - **Stage 7:** Settings UI (profiles, channel groups, hidden videos) + Drive backup
 - **Stage 8:** Soft launch + kill criterion check
 
