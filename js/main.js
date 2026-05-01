@@ -12,7 +12,7 @@ import {
 } from './auth.js';
 import { refreshFeed, getRenderableFeed, getSavedFeed } from './feed.js';
 import { getDailyUsage, getQuotaCap } from './quota.js';
-import { scoreBreakdown } from './scoring.js';
+import { scoreBreakdown, resolveChannelWeight } from './scoring.js';
 import { openPlayer, bindModalChrome, loadIframeApi } from './player.js';
 import {
   markWatched, unmarkWatched,
@@ -362,12 +362,64 @@ async function handleAction(action, videoId) {
         if (currentView === 'saved') await renderCachedFeed();
       });
     } else if (action === 'skip') {
+      // Capture video metadata BEFORE the IDB write + re-render — the
+      // feedIndex is rebuilt by renderCachedFeed() and the just-skipped
+      // video drops out, so a post-render lookup returns undefined.
+      const video = feedIndex.get(videoId);
+      const channelId = video?.channelId;
+      const channelTitle = video?.channelTitle || 'this channel';
+
       await markNotInterested(videoId);
       await renderCachedFeed();
-      showToast('Hidden', async () => {
+
+      let weightApplied = false;
+      let prevOverride; // captured if "See less" runs
+
+      const undo = async () => {
         await unmarkNotInterested(videoId);
+        if (weightApplied && channelId) {
+          const profile = await getActiveProfile();
+          if (profile) {
+            profile.channelOverrides = profile.channelOverrides || {};
+            if (prevOverride === undefined) {
+              delete profile.channelOverrides[channelId];
+            } else {
+              profile.channelOverrides[channelId] = prevOverride;
+            }
+            await put(STORES.profiles, profile);
+          }
+        }
         await renderCachedFeed();
-      });
+      };
+
+      const secondary = channelId ? {
+        label: `See less from ${channelTitle}`,
+        fn: async () => {
+          const profile = await getActiveProfile();
+          if (!profile) return;
+          profile.channelOverrides = profile.channelOverrides || {};
+          // Capture before we mutate, for atomic undo.
+          const existing = profile.channelOverrides[channelId];
+          prevOverride = existing; // may be undefined if no prior override
+
+          // Subtract 0.5 from the channel's *resolved* weight (override
+          // wins over groups, otherwise group sum, else 0). Clamp to
+          // [-2, +2] per the per-channel weight bound from ADR-007.
+          const baseline = resolveChannelWeight(channelId, profile);
+          const newOverride = Math.max(-2, Math.min(2, baseline - 0.5));
+          profile.channelOverrides[channelId] = newOverride;
+
+          await put(STORES.profiles, profile);
+          weightApplied = true;
+          await renderCachedFeed();
+
+          const sign = newOverride >= 0 ? '+' : '';
+          updateToastMessage(`Hidden · ${channelTitle} weighted ${sign}${newOverride.toFixed(1)}`);
+          hideSecondaryAction(); // one-shot — can't compound on a single hide
+        },
+      } : null;
+
+      showToast('Hidden', undo, secondary);
     }
   } catch (err) {
     console.error(`Action ${action} failed`, err);
@@ -376,21 +428,37 @@ async function handleAction(action, videoId) {
 
 let toastTimer = null;
 let toastUndoFn = null;
+let toastSecondaryFn = null;
 
 function bindToast() {
-  const undoBtn = document.getElementById('toast-undo');
-  undoBtn.addEventListener('click', () => {
+  document.getElementById('toast-undo').addEventListener('click', () => {
     const fn = toastUndoFn;
     hideToast();
     if (fn) fn();
   });
+  document.getElementById('toast-secondary').addEventListener('click', () => {
+    const fn = toastSecondaryFn;
+    if (fn) fn();
+    // Don't hide the toast on secondary — the action still gets a 5s
+    // window to undo. The secondary button hides itself once invoked.
+  });
 }
 
-function showToast(message, undoFn) {
+// secondary: { label, fn } | null — shown to the left of Undo. Useful
+// for follow-up offers like "See less from this channel" after a Hide.
+function showToast(message, undoFn, secondary = null) {
   const toast = document.getElementById('action-toast');
   const msg = document.getElementById('toast-msg');
+  const secBtn = document.getElementById('toast-secondary');
   msg.textContent = message;
   toastUndoFn = undoFn || null;
+  toastSecondaryFn = secondary?.fn || null;
+  if (secondary?.label) {
+    secBtn.textContent = secondary.label;
+    secBtn.hidden = false;
+  } else {
+    secBtn.hidden = true;
+  }
   toast.hidden = false;
   // Force reflow so the .show transition kicks in even on rapid retoasts.
   void toast.offsetWidth;
@@ -399,10 +467,22 @@ function showToast(message, undoFn) {
   toastTimer = setTimeout(hideToast, 5000);
 }
 
+function updateToastMessage(message) {
+  const msg = document.getElementById('toast-msg');
+  if (msg) msg.textContent = message;
+}
+
+function hideSecondaryAction() {
+  document.getElementById('toast-secondary').hidden = true;
+  toastSecondaryFn = null;
+}
+
 function hideToast() {
   const toast = document.getElementById('action-toast');
   toast.classList.remove('show');
   toastUndoFn = null;
+  toastSecondaryFn = null;
+  document.getElementById('toast-secondary').hidden = true;
   if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
   setTimeout(() => { toast.hidden = true; }, 200);
 }

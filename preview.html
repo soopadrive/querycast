@@ -212,9 +212,10 @@
   </div>
 </div>
 
-<!-- Action toast with undo (Stage 6b) — same markup as production. -->
+<!-- Action toast with undo (Stage 6b) + optional secondary action — same markup as production. -->
 <div class="action-toast" id="action-toast" role="status" aria-live="polite" hidden>
   <span class="toast-msg" id="toast-msg"></span>
+  <button class="toast-secondary" id="toast-secondary" hidden></button>
   <button class="toast-undo" id="toast-undo">Undo</button>
 </div>
 

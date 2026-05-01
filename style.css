@@ -718,20 +718,27 @@ body.modal-open { overflow: hidden; }
   pointer-events: auto;
 }
 .toast-msg { color: var(--text-bright); }
-.toast-undo {
+.toast-undo,
+.toast-secondary {
   background: transparent;
-  border: 1px solid var(--blue);
-  color: var(--blue);
   padding: 0.25rem 0.7rem;
   border-radius: 6px;
   cursor: pointer;
   font-family: inherit;
   font-size: 0.82rem;
   font-weight: 600;
+  white-space: nowrap;
 }
-.toast-undo:hover {
-  background: var(--blue-bg);
+.toast-undo {
+  border: 1px solid var(--blue);
+  color: var(--blue);
 }
+.toast-undo:hover { background: var(--blue-bg); }
+.toast-secondary {
+  border: 1px solid var(--purple);
+  color: var(--purple);
+}
+.toast-secondary:hover { background: rgba(210, 168, 255, 0.15); }
 
 footer {
   margin-top: 2rem;
