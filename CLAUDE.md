@@ -30,7 +30,14 @@ querycast/
 │   ├── config.js           # Scopes, OAuth endpoints, daily quota cap, DB version
 │   ├── defaults.js         # Default profile, store-name constants, pin boost
 │   ├── storage.js          # IndexedDB wrapper (9 stores, multi-tab safe)
-│   └── setup-screen.js     # First-run BYO credentials entry
+│   ├── setup-screen.js     # First-run BYO credentials entry
+│   ├── auth.js             # PKCE flow, token refresh
+│   ├── youtube-api.js      # subs (paginated) + videos.list (batched 50)
+│   ├── rss-fetcher.js      # invoke fetch_rss + parse Atom feed
+│   ├── concurrency.js      # promise queue, RSS_CONCURRENCY=3
+│   ├── feed.js             # refreshFeed + getRenderableFeed (filter + score + sort)
+│   ├── quota.js            # daily usage tracker, 200u/day cap
+│   └── scoring.js          # pure filter + score functions (Stage 5, ADR-007)
 └── src-tauri/
     ├── Cargo.toml          # Rust dependencies
     ├── tauri.conf.json     # Bundle config, window settings, icon list
@@ -85,12 +92,12 @@ From WSL: `cargo tauri dev` works (with WSLg for the GUI) but `cargo tauri build
 Per the v3 plan (Tauri pivot):
 
 - **Stage 0 (✅ done):** decisions + ADRs + name (QueryCast TESS-clean) + sunset criteria + icons
-- **Stage 1 (current):** Tauri scaffold + BYO setup screen + IndexedDB contract
-- **Stage 2:** PKCE auth flow via localhost loopback. Token persistence + refresh.
-- **Stage 3:** Subscriptions + direct RSS fetch + first feed render (no proxy needed; WebView2 fetches RSS directly)
-- **Stage 4:** Metadata enrichment + tombstones + client quota cap (200 units/day)
-- **Stage 5:** Filter + ranking engine (channel groups, pins, sweet spot)
-- **Stage 6:** UI per ADR-006 + per-video actions + Saved view + profile switcher
+- **Stage 1 (✅ done):** Tauri scaffold + BYO setup screen + IndexedDB contract
+- **Stage 2 (✅ done):** PKCE auth flow via localhost loopback. Token persistence + refresh.
+- **Stage 3 (✅ done):** Subscriptions + direct RSS fetch + first feed render (no proxy needed; WebView2 fetches RSS directly)
+- **Stage 4 (✅ done):** Metadata enrichment + tombstones + client quota cap (200 units/day)
+- **Stage 5 (✅ done):** Filter + ranking engine (`js/scoring.js` — hard filters, channel-weight resolution, Gaussian length-fit, pin boost). `getRenderableFeed()` sorts by score; UI shows score pill + PINNED badge.
+- **Stage 6 (current):** UI per ADR-006 + per-video actions + Saved view + profile switcher
 - **Stage 7:** Settings UI (profiles, channel groups, hidden videos) + Drive backup
 - **Stage 8:** Soft launch + kill criterion check
 

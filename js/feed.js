@@ -5,9 +5,10 @@
 import { fetchSubscriptions, fetchVideoMetadata, parseIsoDuration } from './youtube-api.js';
 import { fetchChannelRss } from './rss-fetcher.js';
 import { createQueue } from './concurrency.js';
-import { put, del, getAll } from './storage.js';
+import { put, del, getAll, getActiveProfile } from './storage.js';
 import { STORES } from './defaults.js';
 import { QuotaExhaustedError } from './quota.js';
+import { passesFilters, scoreVideo, isChannelPinned } from './scoring.js';
 
 const SUBSCRIPTIONS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const TOMBSTONE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -200,23 +201,39 @@ async function enrichNewVideos(onProgress) {
 }
 
 export async function getRenderableFeed() {
-  const [videos, watched, notInterested, tombstoneRows] = await Promise.all([
+  const [videos, watched, notInterested, tombstoneRows, profile] = await Promise.all([
     getAll(STORES.videos),
     getAll(STORES.watched),
     getAll(STORES.notInterested),
     getAll(STORES.tombstones),
+    getActiveProfile(),
   ]);
 
   const watchedIds = new Set(watched.map((v) => v.videoId));
   const skippedIds = new Set(notInterested.map((v) => v.videoId));
   const tombstoneIds = new Set(tombstoneRows.map((t) => t.videoId));
 
-  return videos
-    .filter(
-      (v) =>
-        !watchedIds.has(v.videoId) &&
-        !skippedIds.has(v.videoId) &&
-        !tombstoneIds.has(v.videoId)
-    )
-    .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+  const survivors = videos.filter(
+    (v) =>
+      !watchedIds.has(v.videoId) &&
+      !skippedIds.has(v.videoId) &&
+      !tombstoneIds.has(v.videoId) &&
+      passesFilters(v, profile)
+  );
+
+  if (!profile) {
+    return survivors.sort(
+      (a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)
+    );
+  }
+
+  for (const v of survivors) {
+    v._score = scoreVideo(v, profile);
+    v._pinned = isChannelPinned(v.channelId, profile);
+  }
+
+  return survivors.sort((a, b) => {
+    if (b._score !== a._score) return b._score - a._score;
+    return new Date(b.publishedAt) - new Date(a.publishedAt);
+  });
 }

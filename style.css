@@ -216,6 +216,21 @@ button.primary:disabled, button.secondary:disabled { opacity: 0.5; cursor: not-a
 .badge.short { background: #d2992233; color: var(--orange); border: 1px solid var(--orange); }
 .badge.live { background: #f8514933; color: var(--red); border: 1px solid var(--red); }
 .badge.upcoming { background: #1f6feb33; color: var(--blue); border: 1px solid var(--blue); }
+.badge.pinned { background: #d2a8ff33; color: var(--purple); border: 1px solid var(--purple); }
+
+.score-pill {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--green);
+  background: #3fb95022;
+  border: 1px solid #3fb95066;
+  vertical-align: middle;
+}
 
 .feed-item .info {
   flex: 1;

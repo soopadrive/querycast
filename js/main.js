@@ -179,6 +179,7 @@ function renderItem(v) {
   const isLive = v.liveStatus === 'live' || v.liveStatus === 'upcoming';
 
   const badges = [];
+  if (v._pinned) badges.push(`<span class="badge pinned">PINNED</span>`);
   if (v.isShort) badges.push(`<span class="badge short">SHORT</span>`);
   if (v.liveStatus === 'live') badges.push(`<span class="badge live">LIVE</span>`);
   else if (v.liveStatus === 'upcoming') badges.push(`<span class="badge upcoming">UPCOMING</span>`);
@@ -187,6 +188,11 @@ function renderItem(v) {
   if (viewLabel) metaParts.push(viewLabel);
   metaParts.push(date);
 
+  const scorePill =
+    typeof v._score === 'number'
+      ? `<span class="score-pill" title="Ranking score">${v._score.toFixed(2)}</span>`
+      : '';
+
   return `
     <li class="feed-item" data-video-id="${escapeAttr(v.videoId)}">
       <div class="thumb-wrap">
@@ -194,7 +200,7 @@ function renderItem(v) {
         ${durationLabel ? `<span class="duration-badge">${durationLabel}</span>` : ''}
       </div>
       <div class="info">
-        <div class="title">${escapeHtml(v.title)}</div>
+        <div class="title">${escapeHtml(v.title)}${scorePill}</div>
         <div class="meta">${metaParts.join(' · ')} ${badges.join(' ')}</div>
       </div>
     </li>
