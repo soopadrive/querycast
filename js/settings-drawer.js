@@ -25,16 +25,48 @@ export function bindSettingsDrawer({ onChange, getToken } = {}) {
 
   document.addEventListener('keydown', (e) => {
     const drawer = document.getElementById('settings-drawer');
-    if (e.key === 'Escape' && drawer?.classList.contains('active')) closeDrawer();
+    if (!drawer?.classList.contains('active')) return;
+    if (e.key === 'Escape') {
+      closeDrawer();
+      return;
+    }
+    if (e.key === 'Tab') {
+      // Focus trap — Tab cycles within the drawer only. Skip currently-
+      // disabled buttons and elements inside collapsed (hidden) sections.
+      const focusables = Array.from(
+        drawer.querySelectorAll(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]'
+        )
+      ).filter((el) => el.offsetParent !== null); // visible only
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   });
 
-  // Section accordion toggles.
+  // Section accordion toggles. Click works; Enter/Space mirrors click
+  // because the heading has role=button + tabindex=0 — without this,
+  // keyboard users can focus but not activate.
   document.querySelectorAll('.section-toggle').forEach((h) => {
-    h.addEventListener('click', () => {
+    const toggle = () => {
       const expanded = h.getAttribute('aria-expanded') === 'true';
       h.setAttribute('aria-expanded', expanded ? 'false' : 'true');
       const body = h.nextElementSibling;
       if (body) body.hidden = expanded;
+    };
+    h.addEventListener('click', toggle);
+    h.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
     });
   });
 

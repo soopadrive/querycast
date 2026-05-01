@@ -247,14 +247,22 @@ async function renderCachedFeed() {
   }
 
   document.querySelectorAll('.video-card').forEach((el) => {
-    el.addEventListener('click', (event) => {
-      // Action buttons + their containing actions row handle their own
-      // clicks; nothing else inside the info card should trigger playback.
+    const open = (event) => {
       if (event.target.closest('.action-btn')) return;
       if (event.target.closest('.info-card .desc, .info-card .score-breakdown')) return;
       const id = el.dataset.videoId;
       const v = feedIndex.get(id);
       if (v) handleCardOpen(v);
+    };
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', (event) => {
+      // Mirror click for keyboard users — Enter / Space activates the
+      // card the same way clicking the thumbnail does.
+      if (event.key === 'Enter' || event.key === ' ') {
+        if (event.target !== el) return; // let inner buttons handle their own
+        event.preventDefault();
+        open(event);
+      }
     });
   });
 
@@ -300,7 +308,7 @@ function videoCardHTML(v, rank, profile) {
   `;
 
   return `
-    <div class="video-card${featured ? ' featured' : ''}" data-video-id="${idAttr}">
+    <div class="video-card${featured ? ' featured' : ''}" data-video-id="${idAttr}" tabindex="0" role="button" aria-label="${escapeAttr(`Play: ${v.title}`)}">
       <div class="thumb-wrap">
         <img class="thumb" src="${escapeAttr(v.thumbnailUrl)}" loading="lazy" alt="">
         <span class="rank-badge">#${rank}</span>

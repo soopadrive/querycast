@@ -79,6 +79,23 @@ body {
   min-height: 100vh;
 }
 
+/* === Keyboard focus indicator (Stage 8c) =====================
+   Single rule for every focusable surface so keyboard users see
+   exactly where focus lives. Default browser rings are barely
+   visible on the dark theme. :focus-visible only triggers for
+   keyboard navigation, so mouse clicks don't get an outline. */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Inline focus targets (chips, badges) deserve a tighter offset. */
+.chip-x:focus-visible,
+.toast-undo:focus-visible,
+.toast-secondary:focus-visible {
+  outline-offset: 1px;
+}
+
 .app-shell {
   max-width: 1280px;
   margin: 0 auto;
